@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Tabacalera",
+    "slug": "tabacalera-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B4332"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "uy.tabacalera.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Se necesita la cámara para escanear los códigos QR de los fardos.",
+        "NSLocationWhenInUseUsageDescription": "Se usa la ubicación GPS para registrar el lugar de compra."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#1B4332"
+      },
+      "package": "uy.tabacalera.app",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Se necesita la cámara para escanear códigos QR de fardos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Se usa la ubicación para registrar dónde se realizó la compra."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "TU_PROJECT_ID_AQUI"
+      }
+    }
+  }
+}
