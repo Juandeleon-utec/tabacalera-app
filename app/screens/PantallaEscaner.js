@@ -7,14 +7,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { insertarFardo, listarFardosPorEnvio } from '../services/baseDeDatos';
 import { validarCodigoQR, esCodigoQrConFormato } from '../services/validadorQR';
 import ItemFardo from '../components/ItemFardo';
-
-const COLORES = {
-  primario: '#1B4332',
-  valido: '#16A34A',
-  invalido: '#DC2626',
-  duplicado: '#D97706',
-  fondo: '#0F0F0F',
-};
+import COLORES from '../constants/colores';
 
 const PANTALLA = Dimensions.get('window');
 
@@ -94,9 +87,11 @@ export default function PantallaEscaner({ navigation, route }) {
   if (!permiso.granted) {
     return (
       <View style={[estilos.contenedor, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: '#FFF', marginBottom: 20 }}>Se requiere acceso a la cámara</Text>
+        <Text style={{ color: COLORES.textoBlanco, marginBottom: 20 }}>
+          Se requiere acceso a la cámara
+        </Text>
         <TouchableOpacity style={estilos.botonPermiso} onPress={solicitarPermiso}>
-          <Text style={{ color: '#FFF' }}>Conceder permiso</Text>
+          <Text style={{ color: COLORES.textoBlanco }}>Conceder permiso</Text>
         </TouchableOpacity>
       </View>
     );
@@ -176,7 +171,7 @@ export default function PantallaEscaner({ navigation, route }) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1A1A1A' },
+  contenedor: { flex: 1, backgroundColor: COLORES.fondoOscuro },
   camaraContenedor: { height: PANTALLA.height * 0.38 },
   camara: { flex: 1 },
   marcoOverlay: {
@@ -191,7 +186,7 @@ const estilos = StyleSheet.create({
   },
   esquina: {
     position: 'absolute', width: 30, height: 30,
-    borderColor: '#FFFFFF', borderWidth: 3,
+    borderColor: COLORES.textoBlanco, borderWidth: 3,
   },
   esquinaSuperiorIzq: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
   esquinaSuperiorDer: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
@@ -201,30 +196,30 @@ const estilos = StyleSheet.create({
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: 'rgba(27,67,50,0.85)', padding: 10,
   },
-  textoAgricultor: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
-  codigoAgricultor: { color: '#A7F3D0', fontSize: 12 },
+  textoAgricultor: { color: COLORES.textoBlanco, fontSize: 14, fontWeight: 'bold' },
+  codigoAgricultor: { color: COLORES.sobrePrimario, fontSize: 12 },
   feedbackEscaneo: {
     padding: 10, paddingHorizontal: 16,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  feedbackCodigo: { color: '#FFFFFF', fontFamily: 'monospace', fontSize: 13 },
-  feedbackEstado: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 13 },
+  feedbackCodigo: { color: COLORES.textoBlanco, fontFamily: 'monospace', fontSize: 13 },
+  feedbackEstado: { color: COLORES.textoBlanco, fontWeight: 'bold', fontSize: 13 },
   contadorBar: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', padding: 12, paddingHorizontal: 16,
-    borderTopWidth: 1, borderTopColor: '#E5E7EB',
+    backgroundColor: COLORES.fondoTarjeta, padding: 12, paddingHorizontal: 16,
+    borderTopWidth: 1, borderTopColor: COLORES.borde,
   },
   contadorItem: { alignItems: 'center', marginRight: 20 },
   contadorNum: { fontSize: 22, fontWeight: 'bold' },
-  contadorLabel: { fontSize: 11, color: '#6B7280' },
+  contadorLabel: { fontSize: 11, color: COLORES.textoClaro },
   botonCerrar: {
     marginLeft: 'auto', backgroundColor: COLORES.primario,
     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
   },
-  textoBotonCerrar: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
-  listaFardos: { flex: 1, backgroundColor: '#FFFFFF' },
+  textoBotonCerrar: { color: COLORES.textoBlanco, fontWeight: 'bold', fontSize: 14 },
+  listaFardos: { flex: 1, backgroundColor: COLORES.fondoTarjeta },
   textoVacio: {
-    textAlign: 'center', color: '#9CA3AF', padding: 30, fontSize: 14,
+    textAlign: 'center', color: COLORES.textoMuyClaro, padding: 30, fontSize: 14,
   },
   botonPermiso: {
     backgroundColor: COLORES.primario, padding: 14, borderRadius: 8,

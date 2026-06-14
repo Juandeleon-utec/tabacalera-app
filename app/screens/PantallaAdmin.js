@@ -6,16 +6,7 @@ import {
 import { cerrarSesion } from '../services/autenticacion';
 import { sincronizacionInicial } from '../services/sincronizacion';
 import { obtenerInfoSync } from '../services/baseDeDatos';
-
-const COLORES = {
-  primario: '#1B4332',
-  secundario: '#2D6A4F',
-  acento: '#52B788',
-  peligro: '#C0392B',
-  fondo: '#F5F5F0',
-  texto: '#1A1A1A',
-  textoClaro: '#6B7280',
-};
+import COLORES from '../constants/colores';
 
 export default function PantallaAdmin({ navigation }) {
   const [sincronizando, setSincronizando] = useState(false);
@@ -118,7 +109,7 @@ export default function PantallaAdmin({ navigation }) {
         disabled={sincronizando}
       >
         {sincronizando ? (
-          <ActivityIndicator color="#FFFFFF" />
+          <ActivityIndicator color={COLORES.textoBlanco} />
         ) : (
           <Text style={estilos.textoBoton}>⬇  Sincronizar ahora</Text>
         )}
@@ -136,28 +127,28 @@ export default function PantallaAdmin({ navigation }) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#F5F5F0' },
+  contenedor: { flex: 1, backgroundColor: COLORES.fondo },
   contenido: { padding: 20 },
   cabecera: { marginBottom: 20 },
   titulo: { fontSize: 22, fontWeight: 'bold', color: COLORES.primario },
   subtitulo: { fontSize: 13, color: COLORES.textoClaro, marginTop: 2 },
   tarjeta: {
-    backgroundColor: '#FFFFFF', borderRadius: 10, padding: 16,
-    marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    backgroundColor: COLORES.fondoTarjeta, borderRadius: 10, padding: 16,
+    marginBottom: 16, shadowColor: COLORES.sombra, shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
-  tarjetaExito: { borderLeftWidth: 4, borderLeftColor: '#2D6A4F' },
+  tarjetaExito: { borderLeftWidth: 4, borderLeftColor: COLORES.secundario },
   tituloTarjeta: { fontSize: 14, fontWeight: '600', color: COLORES.textoClaro, marginBottom: 8 },
   tituloExito: { fontSize: 14, fontWeight: 'bold', color: COLORES.secundario, marginBottom: 8 },
   etiqueta: { fontWeight: '600' },
   dato: { fontSize: 14, color: COLORES.texto, marginBottom: 4 },
   tarjetaProgreso: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF4FF',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORES.fondoAlerta,
     padding: 14, borderRadius: 8, marginBottom: 16, gap: 10,
   },
   textoProgreso: { fontSize: 14, color: COLORES.primario, flex: 1 },
   instrucciones: {
-    backgroundColor: '#F0F7F4', borderRadius: 8, padding: 14, marginBottom: 20,
+    backgroundColor: COLORES.fondoInfo, borderRadius: 8, padding: 14, marginBottom: 20,
   },
   tituloInstrucciones: { fontSize: 13, fontWeight: '600', color: COLORES.primario, marginBottom: 8 },
   textoInstrucciones: { fontSize: 13, color: COLORES.texto, lineHeight: 20 },
@@ -166,7 +157,7 @@ const estilos = StyleSheet.create({
     padding: 16, alignItems: 'center', marginBottom: 12,
   },
   botonDeshabilitado: { opacity: 0.5 },
-  textoBoton: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  textoBoton: { color: COLORES.textoBlanco, fontSize: 16, fontWeight: 'bold' },
   botonSalir: {
     borderWidth: 1.5, borderColor: COLORES.peligro, borderRadius: 10,
     padding: 14, alignItems: 'center',

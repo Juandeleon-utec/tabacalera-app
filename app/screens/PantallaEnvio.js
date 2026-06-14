@@ -6,15 +6,7 @@ import {
 import { listarFardosPorEnvio, obtenerEnvioPorId, cerrarEnvio } from '../services/baseDeDatos';
 import { generarPDFEnvio, compartirPDF } from '../services/generadorPDF';
 import ItemFardo from '../components/ItemFardo';
-
-const COLORES = {
-  primario: '#1B4332',
-  valido: '#16A34A',
-  invalido: '#DC2626',
-  fondo: '#F5F5F0',
-  texto: '#1A1A1A',
-  textoClaro: '#6B7280',
-};
+import COLORES from '../constants/colores';
 
 export default function PantallaEnvio({ navigation, route }) {
   const { envioId, idLocal, agricultor, sesion, fecha, hora, gps } = route.params;
@@ -161,7 +153,7 @@ export default function PantallaEnvio({ navigation, route }) {
               disabled={generandoPDF}
             >
               {generandoPDF ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={COLORES.textoBlanco} />
               ) : (
                 <Text style={estilos.textoBoton}>📄 Generar y compartir PDF</Text>
               )}
@@ -181,35 +173,35 @@ const estilos = StyleSheet.create({
   cabecera: {
     backgroundColor: COLORES.primario, padding: 16, paddingTop: 12,
   },
-  tituloAgricultor: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
-  subtituloAgricultor: { color: '#A7F3D0', fontSize: 13, marginTop: 2 },
+  tituloAgricultor: { color: COLORES.textoBlanco, fontSize: 18, fontWeight: 'bold' },
+  subtituloAgricultor: { color: COLORES.sobrePrimario, fontSize: 13, marginTop: 2 },
   filaFecha: { marginTop: 6 },
-  fecha: { color: '#D1FAE5', fontSize: 13 },
-  gps: { color: '#A7F3D0', fontSize: 11, marginTop: 2 },
+  fecha: { color: COLORES.sobrePrimarioSuave, fontSize: 13 },
+  gps: { color: COLORES.sobrePrimario, fontSize: 11, marginTop: 2 },
   estadisticas: { flexDirection: 'row', gap: 10, marginTop: 14 },
   stat: {
     flex: 1, backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 8, padding: 10, alignItems: 'center', borderWidth: 1.5,
   },
-  statNum: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  statLabel: { fontSize: 11, color: '#D1FAE5', marginTop: 2 },
+  statNum: { fontSize: 24, fontWeight: 'bold', color: COLORES.textoBlanco },
+  statLabel: { fontSize: 11, color: COLORES.sobrePrimarioSuave, marginTop: 2 },
   estadoBadge: {
     alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 10,
     paddingVertical: 4, marginTop: 10,
   },
-  estadoAbierto: { backgroundColor: '#D97706' },
-  estadoCerrado: { backgroundColor: '#16A34A' },
-  estadoTexto: { color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' },
+  estadoAbierto: { backgroundColor: COLORES.duplicado },
+  estadoCerrado: { backgroundColor: COLORES.valido },
+  estadoTexto: { color: COLORES.textoBlanco, fontSize: 12, fontWeight: 'bold' },
   tituloLista: {
     padding: 14, fontSize: 13, fontWeight: '600',
-    color: COLORES.textoClaro, backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+    color: COLORES.textoClaro, backgroundColor: COLORES.fondoTarjeta,
+    borderBottomWidth: 1, borderBottomColor: COLORES.borde,
   },
-  lista: { flex: 1, backgroundColor: '#FFFFFF' },
+  lista: { flex: 1, backgroundColor: COLORES.fondoTarjeta },
   botonesInferiores: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 14, backgroundColor: '#FFFFFF',
-    borderTopWidth: 1, borderTopColor: '#E5E7EB',
+    padding: 14, backgroundColor: COLORES.fondoTarjeta,
+    borderTopWidth: 1, borderTopColor: COLORES.borde,
     gap: 10,
   },
   botonCerrar: {
@@ -217,7 +209,7 @@ const estilos = StyleSheet.create({
     padding: 16, alignItems: 'center',
   },
   botonPDF: {
-    backgroundColor: '#2563EB', borderRadius: 10,
+    backgroundColor: COLORES.info, borderRadius: 10,
     padding: 16, alignItems: 'center',
   },
   botonNuevo: {
@@ -225,6 +217,6 @@ const estilos = StyleSheet.create({
     padding: 14, alignItems: 'center',
   },
   botonDeshabilitado: { opacity: 0.6 },
-  textoBoton: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
+  textoBoton: { color: COLORES.textoBlanco, fontSize: 15, fontWeight: 'bold' },
   textoBotonNuevo: { color: COLORES.primario, fontSize: 15, fontWeight: '600' },
 });

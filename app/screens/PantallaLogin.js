@@ -5,16 +5,7 @@ import {
   Platform, ScrollView,
 } from 'react-native';
 import { login } from '../services/autenticacion';
-
-const COLORES = {
-  primario: '#1B4332',
-  secundario: '#2D6A4F',
-  acento: '#52B788',
-  fondo: '#F5F5F0',
-  error: '#C0392B',
-  texto: '#1A1A1A',
-  textoClaro: '#6B7280',
-};
+import COLORES from '../constants/colores';
 
 export default function PantallaLogin({ navigation }) {
   const [nombreUsuario, setNombreUsuario] = useState('');
@@ -116,7 +107,7 @@ export default function PantallaLogin({ navigation }) {
             disabled={cargando}
           >
             {cargando ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={COLORES.textoBlanco} />
             ) : (
               <Text style={estilos.textoBoton}>Ingresar</Text>
             )}
@@ -145,22 +136,22 @@ const estilos = StyleSheet.create({
   titulo: { fontSize: 28, fontWeight: 'bold', color: COLORES.primario },
   subtitulo: { fontSize: 14, color: COLORES.textoClaro, marginTop: 4 },
   formulario: {
-    backgroundColor: '#FFFFFF', borderRadius: 12, padding: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    backgroundColor: COLORES.fondoTarjeta, borderRadius: 12, padding: 24,
+    shadowColor: COLORES.sombra, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
   },
   etiqueta: { fontSize: 13, fontWeight: '600', color: COLORES.texto, marginBottom: 6 },
   entrada: {
-    borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8,
+    borderWidth: 1, borderColor: COLORES.bordeInput, borderRadius: 8,
     padding: 12, fontSize: 15, color: COLORES.texto,
-    backgroundColor: '#FAFAFA', marginBottom: 16,
+    backgroundColor: COLORES.fondoInput, marginBottom: 16,
   },
   botonLogin: {
     backgroundColor: COLORES.primario, borderRadius: 8,
     padding: 14, alignItems: 'center', marginTop: 8,
   },
   botonDeshabilitado: { opacity: 0.6 },
-  textoBoton: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  textoBoton: { color: COLORES.textoBlanco, fontSize: 16, fontWeight: 'bold' },
   nota: {
     textAlign: 'center', fontSize: 12, color: COLORES.textoClaro,
     marginTop: 24, lineHeight: 18,

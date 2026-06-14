@@ -1,13 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
-const COLORES = {
-  valido: '#16A34A',
-  invalido: '#DC2626',
-  fondoValido: '#F0FDF4',
-  fondoInvalido: '#FEF2F2',
-  borde: '#E5E7EB',
-};
+import COLORES from '../constants/colores';
 
 export default function ItemFardo({ fardo, mostrarMotivo = false }) {
   const esValido = fardo.valido === 1 || fardo.valido === true;
@@ -49,9 +42,9 @@ const estilos = StyleSheet.create({
   fondoInvalido: { backgroundColor: COLORES.fondoInvalido },
   indicador: { width: 4, height: '100%', borderRadius: 2, marginRight: 12, minHeight: 36 },
   datos: { flex: 1 },
-  codigo: { fontSize: 14, fontFamily: 'monospace', color: '#1A1A1A', letterSpacing: 0.5 },
+  codigo: { fontSize: 14, fontFamily: 'monospace', color: COLORES.texto, letterSpacing: 0.5 },
   motivo: { fontSize: 11, color: COLORES.invalido, marginTop: 2 },
   derecha: { alignItems: 'flex-end' },
   estado: { fontSize: 18, fontWeight: 'bold' },
-  hora: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  hora: { fontSize: 10, color: COLORES.textoClaro, marginTop: 2 },
 });

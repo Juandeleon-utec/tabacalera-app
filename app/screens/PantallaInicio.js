@@ -8,15 +8,7 @@ import { listarAgricultores, buscarAgricultores, crearEnvio } from '../services/
 import { sincronizarEnviosPendientes, hayConectividadConServidor } from '../services/sincronizacion';
 import { cerrarSesion } from '../services/autenticacion';
 import { generarIdLocal } from '../utils/uuid';
-
-const COLORES = {
-  primario: '#1B4332',
-  acento: '#52B788',
-  fondo: '#F5F5F0',
-  texto: '#1A1A1A',
-  textoClaro: '#6B7280',
-  borde: '#E5E7EB',
-};
+import COLORES from '../constants/colores';
 
 export default function PantallaInicio({ navigation, route }) {
   const sesion = route.params?.sesion;
@@ -226,15 +218,15 @@ const estilos = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: COLORES.primario, paddingHorizontal: 16, paddingVertical: 10,
   },
-  saludo: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  textSync: { color: '#A7F3D0', fontSize: 12, marginTop: 2 },
-  botonSalir: { color: '#A7F3D0', fontSize: 14, fontWeight: '600' },
-  gpsBar: { backgroundColor: '#D1FAE5', paddingHorizontal: 16, paddingVertical: 6 },
-  gpsTexto: { fontSize: 12, color: '#065F46' },
-  buscadorContenedor: { padding: 12, backgroundColor: '#FFFFFF' },
+  saludo: { color: COLORES.textoBlanco, fontSize: 14, fontWeight: '600' },
+  textSync: { color: COLORES.sobrePrimario, fontSize: 12, marginTop: 2 },
+  botonSalir: { color: COLORES.sobrePrimario, fontSize: 14, fontWeight: '600' },
+  gpsBar: { backgroundColor: COLORES.sobrePrimarioSuave, paddingHorizontal: 16, paddingVertical: 6 },
+  gpsTexto: { fontSize: 12, color: COLORES.sobrePrimarioOscuro },
+  buscadorContenedor: { padding: 12, backgroundColor: COLORES.fondoTarjeta },
   buscador: {
     borderWidth: 1, borderColor: COLORES.borde, borderRadius: 8,
-    padding: 10, fontSize: 14, color: COLORES.texto, backgroundColor: '#F9FAFB',
+    padding: 10, fontSize: 14, color: COLORES.texto, backgroundColor: COLORES.fondoInputAlt,
   },
   instruccion: {
     fontSize: 13, color: COLORES.textoClaro, paddingHorizontal: 16,
@@ -244,13 +236,13 @@ const estilos = StyleSheet.create({
   separador: { height: 1, backgroundColor: COLORES.borde, marginLeft: 16 },
   itemAgricultor: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', paddingVertical: 14, paddingHorizontal: 16,
+    backgroundColor: COLORES.fondoTarjeta, paddingVertical: 14, paddingHorizontal: 16,
   },
   codigoBadge: {
     backgroundColor: COLORES.primario, borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 4, marginRight: 12,
   },
-  codigoTexto: { color: '#FFFFFF', fontSize: 12, fontFamily: 'monospace', fontWeight: 'bold' },
+  codigoTexto: { color: COLORES.textoBlanco, fontSize: 12, fontFamily: 'monospace', fontWeight: 'bold' },
   datosAgricultor: { flex: 1 },
   nombreAgricultor: { fontSize: 15, color: COLORES.texto, fontWeight: '500' },
   departamento: { fontSize: 12, color: COLORES.textoClaro, marginTop: 2 },
