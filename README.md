@@ -260,4 +260,4 @@ Reemplazar `app/assets/logo.png` con el logo oficial de la empresa.
 
 ## Licencia
 
-Uso interno — Tabacalera S.A.
+Uso interno — Montepaz S.A.
