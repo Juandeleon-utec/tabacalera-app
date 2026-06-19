@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tabacalera",
+    "name": "Tabacalera Montepaz",
     "slug": "tabacalera-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,11 +9,11 @@
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1B4332"
+      "backgroundColor": "#6B5333"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "uy.tabacalera.app",
+      "bundleIdentifier": "com.montepaz.tabacalera",
       "infoPlist": {
         "NSCameraUsageDescription": "Se necesita la cámara para escanear los códigos QR de los fardos.",
         "NSLocationWhenInUseUsageDescription": "Se usa la ubicación GPS para registrar el lugar de compra."
@@ -22,13 +22,15 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
-        "backgroundColor": "#1B4332"
+        "backgroundColor": "#6B5333"
       },
-      "package": "uy.tabacalera.app",
+      "package": "com.montepaz.tabacalera",
+      "versionCode": 1,
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "INTERNET",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
@@ -45,12 +47,14 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Se usa la ubicación para registrar dónde se realizó la compra."
         }
-      ]
+      ],
+      "./plugins/withImpresionTermica"
     ],
-    "extra": {
+   "extra": {
       "eas": {
-        "projectId": "TU_PROJECT_ID_AQUI"
+        "projectId": "fc276883-7390-4d39-971b-0a8307eb2ef3"
       }
-    }
+    },
+    "owner": "juanpdeleon"
   }
 }

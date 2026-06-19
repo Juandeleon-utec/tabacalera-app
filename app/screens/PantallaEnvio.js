@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { listarFardosPorEnvio, obtenerEnvioPorId, cerrarEnvio } from '../services/baseDeDatos';
 import { generarPDFEnvio, compartirPDF } from '../services/generadorPDF';
+import { imprimirComprobante, verificarImpresoraDisponible } from '../services/impresora';
 import ItemFardo from '../components/ItemFardo';
 import COLORES from '../constants/colores';
 
@@ -15,10 +16,13 @@ export default function PantallaEnvio({ navigation, route }) {
   const [envio, setEnvio] = useState(null);
   const [cerrado, setCerrado] = useState(false);
   const [generandoPDF, setGenerandoPDF] = useState(false);
+  const [imprimiendoTicket, setImprimiendoTicket] = useState(false);
+  const [impresoraDisponible, setImpresoraDisponible] = useState(false);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     cargarDatos();
+    verificarImpresoraDisponible().then(setImpresoraDisponible);
   }, []);
 
   async function cargarDatos() {
@@ -75,6 +79,24 @@ export default function PantallaEnvio({ navigation, route }) {
       console.error('[PDF]', error);
     } finally {
       setGenerandoPDF(false);
+    }
+  }
+
+  async function manejarImprimirTicket() {
+    setImprimiendoTicket(true);
+    try {
+      const datosEnvio = {
+        ...envio,
+        agricultor_codigo: agricultor.codigo_6dig,
+        agricultor_nombre: agricultor.nombre,
+      };
+      await imprimirComprobante(datosEnvio, fardos, sesion);
+      Alert.alert('Impresión exitosa', 'El comprobante fue enviado a la impresora.');
+    } catch (error) {
+      Alert.alert('Error de impresión', error.message);
+      console.error('[IMPRESORA]', error);
+    } finally {
+      setImprimiendoTicket(false);
     }
   }
 
@@ -158,6 +180,19 @@ export default function PantallaEnvio({ navigation, route }) {
                 <Text style={estilos.textoBoton}>📄 Generar y compartir PDF</Text>
               )}
             </TouchableOpacity>
+            {impresoraDisponible && (
+              <TouchableOpacity
+                style={[estilos.botonImprimir, imprimiendoTicket && estilos.botonDeshabilitado]}
+                onPress={manejarImprimirTicket}
+                disabled={imprimiendoTicket}
+              >
+                {imprimiendoTicket ? (
+                  <ActivityIndicator color={COLORES.textoBlanco} />
+                ) : (
+                  <Text style={estilos.textoBoton}>🖨 Imprimir comprobante</Text>
+                )}
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={estilos.botonNuevo} onPress={manejarNuevoEnvio}>
               <Text style={estilos.textoBotonNuevo}>Nuevo envío</Text>
             </TouchableOpacity>
@@ -210,6 +245,10 @@ const estilos = StyleSheet.create({
   },
   botonPDF: {
     backgroundColor: COLORES.info, borderRadius: 10,
+    padding: 16, alignItems: 'center',
+  },
+  botonImprimir: {
+    backgroundColor: COLORES.acento, borderRadius: 10,
     padding: 16, alignItems: 'center',
   },
   botonNuevo: {

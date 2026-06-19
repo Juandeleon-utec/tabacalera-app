@@ -11,11 +11,12 @@ import { descargarDatosSync, sincronizarEnvios, verificarConectividad } from './
 
 /**
  * Verifica si hay conectividad con el servidor interno.
- * No basta con tener WiFi; el servidor debe responder.
+ * No restringe por tipo de red: la IP 192.168.x.x es inalcanzable
+ * desde internet, por lo que si el servidor responde estamos en la LAN.
  */
 export async function hayConectividadConServidor() {
   const estado = await NetInfo.fetch();
-  if (estado.type !== 'wifi') return false;
+  if (!estado.isConnected) return false;
   return await verificarConectividad();
 }
 

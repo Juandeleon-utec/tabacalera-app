@@ -118,19 +118,31 @@ npm start
 npm run android
 ```
 
-### Build APK para distribución
+### Build APK de producción (instalación directa en los 10 dispositivos)
 
 ```bash
-# Primero configure su cuenta EAS
-eas login
-eas build:configure
+cd app
 
-# Build APK (para distribución directa, sin Play Store)
-eas build --platform android --profile preview
+# 1. Iniciar sesión en Expo
+npx expo login
 
-# Build AAB (para Play Store)
+# 2. Compilar el APK en la nube (EAS Build)
 eas build --platform android --profile production
+
+# 3. Descargar el APK del enlace que genera EAS al finalizar
+
+# 4. Instalar en cada dispositivo vía ADB
+adb install tabacalera-montepaz.apk
+# o copiar el APK al dispositivo y abrirlo manualmente
 ```
+
+> El perfil `production` genera un APK (no AAB) listo para instalación directa sin Play Store.
+> El build se realiza en la nube de EAS; no requiere Android Studio local.
+
+### Actualizar `extra.eas.projectId` en app.json
+
+Tras ejecutar `eas build:configure` por primera vez, EAS asigna un `projectId`.
+Reemplazar `"TU_PROJECT_ID_AQUI"` en `app.json` con ese valor.
 
 ### Variables de entorno de la app (.env)
 

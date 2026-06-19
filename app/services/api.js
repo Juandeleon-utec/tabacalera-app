@@ -1,15 +1,13 @@
 import axios from 'axios';
+import { CONFIG } from '../src/config/config';
 import { obtenerInfoSync } from './baseDeDatos';
 
-const URL_BASE = process.env.API_URL || 'http://192.168.1.100:3000';
-
 const clienteApi = axios.create({
-  baseURL: URL_BASE,
+  baseURL: CONFIG.API_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Agrega el token JWT a las peticiones que lo requieran
 async function obtenerHeaderAuth() {
   const info = await obtenerInfoSync();
   if (!info?.token_sync) return {};
