@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import { CONFIG } from '../src/config/config';
 
 const { ImpresionTermica } = NativeModules;
 
@@ -9,7 +10,8 @@ function esSoportado() {
 export async function verificarImpresoraDisponible() {
   if (!esSoportado()) return false;
   try {
-    return await ImpresionTermica.verificarDisponible();
+    // Pasa los puertos configurados; el módulo Java prueba cada uno en orden
+    return await ImpresionTermica.verificarEnPuertos(CONFIG.IMPRESORA.PUERTOS);
   } catch {
     return false;
   }
@@ -42,6 +44,8 @@ export async function imprimirComprobante(envio, fardos, sesion) {
     totalValidos,
     totalInvalidos,
     totalDuplicados,
+    // Puertos desde config — el módulo Java los usa en lugar del hardcode interno
+    puertos: CONFIG.IMPRESORA.PUERTOS,
   };
 
   await ImpresionTermica.imprimirTicket(datos);

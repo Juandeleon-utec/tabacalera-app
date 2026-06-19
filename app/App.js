@@ -6,19 +6,16 @@ import { StatusBar } from 'expo-status-bar';
 
 import { inicializarBaseDeDatos } from './services/baseDeDatos';
 import { obtenerSesionActiva } from './services/autenticacion';
+import COLORES from './constants/colores';
 
 import PantallaLogin from './screens/PantallaLogin';
 import PantallaAdmin from './screens/PantallaAdmin';
 import PantallaInicio from './screens/PantallaInicio';
 import PantallaEscaner from './screens/PantallaEscaner';
 import PantallaEnvio from './screens/PantallaEnvio';
+import PantallaHistorial from './screens/PantallaHistorial';
 
 const Pila = createNativeStackNavigator();
-
-const COLORES = {
-  primario: '#1B4332',
-  texto: '#FFFFFF',
-};
 
 export default function App() {
   const [cargando, setCargando] = useState(true);
@@ -56,7 +53,7 @@ export default function App() {
         initialRouteName={rutaInicial}
         screenOptions={{
           headerStyle: { backgroundColor: COLORES.primario },
-          headerTintColor: COLORES.texto,
+          headerTintColor: COLORES.textoBlanco,
           headerTitleStyle: { fontWeight: 'bold' },
           animation: 'slide_from_right',
         }}
@@ -86,6 +83,11 @@ export default function App() {
           component={PantallaEnvio}
           options={{ title: 'Detalle del Envío' }}
         />
+        <Pila.Screen
+          name="Historial"
+          component={PantallaHistorial}
+          options={{ title: 'Historial de Envíos' }}
+        />
       </Pila.Navigator>
     </NavigationContainer>
   );
@@ -96,6 +98,6 @@ const estilos = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORES.fondo,
   },
 });

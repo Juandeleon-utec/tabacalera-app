@@ -4,7 +4,7 @@ import {
   ScrollView, ActivityIndicator, FlatList,
 } from 'react-native';
 import { listarFardosPorEnvio, obtenerEnvioPorId, cerrarEnvio } from '../services/baseDeDatos';
-import { generarPDFEnvio, compartirPDF } from '../services/generadorPDF';
+import { generarPDFEnvio, compartirPDF, guardarPDFEnDispositivo } from '../services/generadorPDF';
 import { imprimirComprobante, verificarImpresoraDisponible } from '../services/impresora';
 import ItemFardo from '../components/ItemFardo';
 import COLORES from '../constants/colores';
@@ -72,8 +72,28 @@ export default function PantallaEnvio({ navigation, route }) {
         agricultor_nombre: agricultor.nombre,
         comprador_nombre: sesion?.nombre,
       };
-      const rutaPDF = await generarPDFEnvio(datosEnvio, fardos);
-      await compartirPDF(rutaPDF);
+      const uriTemporal = await generarPDFEnvio(datosEnvio, fardos);
+      const { ruta, nombreArchivo, guardadoEnDescargasPublicas } =
+        await guardarPDFEnDispositivo(uriTemporal, datosEnvio);
+
+      const ubicacion = guardadoEnDescargasPublicas
+        ? 'Downloads/Montepaz/'
+        : 'Almacenamiento interno/Montepaz/';
+
+      Alert.alert(
+        'PDF guardado',
+        `Archivo guardado en ${ubicacion}\n\n${nombreArchivo}`,
+        [
+          {
+            text: 'Enviar por WhatsApp',
+            onPress: () =>
+              compartirPDF(ruta).catch((e) =>
+                Alert.alert('Error al compartir', e.message)
+              ),
+          },
+          { text: 'Cerrar', style: 'cancel' },
+        ]
+      );
     } catch (error) {
       Alert.alert('Error al generar PDF', error.message);
       console.error('[PDF]', error);
@@ -177,7 +197,7 @@ export default function PantallaEnvio({ navigation, route }) {
               {generandoPDF ? (
                 <ActivityIndicator color={COLORES.textoBlanco} />
               ) : (
-                <Text style={estilos.textoBoton}>📄 Generar y compartir PDF</Text>
+                <Text style={estilos.textoBoton}>📄 Guardar PDF</Text>
               )}
             </TouchableOpacity>
             {impresoraDisponible && (

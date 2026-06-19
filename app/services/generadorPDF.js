@@ -1,9 +1,57 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import COLORES from '../constants/colores';
 
 const NOMBRE_EMPRESA = 'Montepaz';
 const SUBTITULO_EMPRESA = 'Tabacalera — Desde 1880';
+
+// Rutas de almacenamiento (externa primero, interna como fallback)
+export const CARPETA_PDF_EXTERNA = 'file:///storage/emulated/0/Download/Montepaz/';
+export const CARPETA_PDF_INTERNA = `${FileSystem.documentDirectory}Montepaz/`;
+
+export function construirNombreArchivoPDF(envio) {
+  const [año, mes, dia] = (envio.fecha || '2026-01-01').split('-');
+  const horaCorta = (envio.hora || '00:00').substring(0, 5).replace(':', '-');
+  const codigo = envio.agricultor_codigo || 'sin_codigo';
+  return `Montepaz_${codigo}_${dia}-${mes}-${año}_${horaCorta}.pdf`;
+}
+
+// Busca si ya existe el PDF guardado (externa o interna). Retorna la ruta o null.
+export async function buscarPDFGuardado(envio) {
+  const nombre = construirNombreArchivoPDF(envio);
+  for (const carpeta of [CARPETA_PDF_EXTERNA, CARPETA_PDF_INTERNA]) {
+    try {
+      const info = await FileSystem.getInfoAsync(carpeta + nombre);
+      if (info.exists) return carpeta + nombre;
+    } catch {
+      // carpeta inexistente, continuar
+    }
+  }
+  return null;
+}
+
+// Copia el PDF temporal a Downloads/Montepaz/ (o almacenamiento interno como fallback).
+// Retorna { ruta, nombreArchivo, guardadoEnDescargasPublicas }
+export async function guardarPDFEnDispositivo(uriTemporal, envio) {
+  const nombreArchivo = construirNombreArchivoPDF(envio);
+
+  // Intento 1: Downloads públicos (funciona en Android < 11 y PDAs con permisos relajados)
+  try {
+    await FileSystem.makeDirectoryAsync(CARPETA_PDF_EXTERNA, { intermediates: true });
+    const destino = CARPETA_PDF_EXTERNA + nombreArchivo;
+    await FileSystem.copyAsync({ from: uriTemporal, to: destino });
+    return { ruta: destino, nombreArchivo, guardadoEnDescargasPublicas: true };
+  } catch {
+    // Permisos de almacenamiento externo no disponibles → fallback
+  }
+
+  // Intento 2: Almacenamiento privado de la app (siempre funciona)
+  await FileSystem.makeDirectoryAsync(CARPETA_PDF_INTERNA, { intermediates: true });
+  const destino = CARPETA_PDF_INTERNA + nombreArchivo;
+  await FileSystem.copyAsync({ from: uriTemporal, to: destino });
+  return { ruta: destino, nombreArchivo, guardadoEnDescargasPublicas: false };
+}
 
 function estadoFardo(fardo) {
   if (fardo.valido === 1 || fardo.valido === true) return 'valido';

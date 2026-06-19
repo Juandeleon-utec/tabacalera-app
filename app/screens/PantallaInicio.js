@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   TextInput, Alert, ActivityIndicator,
@@ -17,6 +17,21 @@ export default function PantallaInicio({ navigation, route }) {
   const [cargando, setCargando] = useState(true);
   const [gps, setGps] = useState(null);
   const [sincronizandoAuto, setSincronizandoAuto] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Historial', { sesion })}
+          style={{ marginRight: 4, paddingHorizontal: 8, paddingVertical: 4 }}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '500' }}>
+            Historial
+          </Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, sesion]);
 
   useEffect(() => {
     cargarAgricultores();

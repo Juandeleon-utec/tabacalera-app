@@ -227,3 +227,18 @@ export async function obtenerInfoSync() {
   const baseDatos = obtenerDB();
   return await baseDatos.getFirstAsync('SELECT * FROM sincronizacion WHERE id = 1');
 }
+
+// ─── Historial ────────────────────────────────────────────────────────────────
+
+export async function listarEnviosResumenPorUsuarioYFecha(usuarioId, fecha) {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getAllAsync(
+    `SELECT e.*,
+       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id AND f.valido = 1) AS total_validos,
+       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id) AS total_fardos
+     FROM envios e
+     WHERE e.usuario_id = ? AND e.fecha = ?
+     ORDER BY e.hora DESC`,
+    [usuarioId, fecha]
+  );
+}

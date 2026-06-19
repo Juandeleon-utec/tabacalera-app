@@ -1,4 +1,3 @@
-import NetInfo from '@react-native-community/netinfo';
 import {
   guardarUsuarios,
   guardarAgricultores,
@@ -11,12 +10,11 @@ import { descargarDatosSync, sincronizarEnvios, verificarConectividad } from './
 
 /**
  * Verifica si hay conectividad con el servidor interno.
- * No restringe por tipo de red: la IP 192.168.x.x es inalcanzable
- * desde internet, por lo que si el servidor responde estamos en la LAN.
+ * Pinga directamente la IP configurada: si responde, estamos en la LAN.
+ * La IP 192.168.x.x es privada y no alcanzable desde internet, por lo
+ * que no es necesario verificar el tipo de red del dispositivo.
  */
 export async function hayConectividadConServidor() {
-  const estado = await NetInfo.fetch();
-  if (!estado.isConnected) return false;
   return await verificarConectividad();
 }
 

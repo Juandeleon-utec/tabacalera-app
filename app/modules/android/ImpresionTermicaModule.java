@@ -16,7 +16,12 @@ import java.nio.charset.Charset;
 public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
 
     private static final String MODULE_NAME = "ImpresionTermica";
-    private static final String[] PUERTOS = {"/dev/ttyS1", "/dev/ttyS2"};
+
+    // Puertos por defecto (fallback si JS no pasa la lista)
+    private static final String[] PUERTOS_DEFAULT = {
+        "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3", "/dev/ttyS4", "/dev/ttyS5"
+    };
+
     private static final int ANCHO = 32;
 
     // ESC/POS byte sequences
@@ -37,9 +42,41 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         return MODULE_NAME;
     }
 
+    // Verifica disponibilidad usando los puertos por defecto (compatibilidad hacia atrás)
     @ReactMethod
     public void verificarDisponible(Promise promise) {
-        for (String puerto : PUERTOS) {
+        verificarEnArray(PUERTOS_DEFAULT, promise);
+    }
+
+    // Verifica disponibilidad usando los puertos pasados desde JS (config.js)
+    @ReactMethod
+    public void verificarEnPuertos(ReadableArray puertosArr, Promise promise) {
+        String[] puertos = arrayDesdeReadable(puertosArr, PUERTOS_DEFAULT);
+        verificarEnArray(puertos, promise);
+    }
+
+    @ReactMethod
+    public void imprimirTicket(ReadableMap datos, Promise promise) {
+        try {
+            // Lee puertos desde datos si JS los pasó; si no, usa defaults
+            String[] puertos = PUERTOS_DEFAULT;
+            if (datos.hasKey("puertos") && !datos.isNull("puertos")) {
+                ReadableArray arr = datos.getArray("puertos");
+                if (arr != null && arr.size() > 0) {
+                    puertos = arrayDesdeReadable(arr, PUERTOS_DEFAULT);
+                }
+            }
+            byte[] ticket = construirTicket(datos);
+            escribirPuerto(ticket, puertos, promise);
+        } catch (Exception e) {
+            promise.reject("IMPRESORA_ERROR", e.getMessage(), e);
+        }
+    }
+
+    // ── Helpers internos ──────────────────────────────────────────────────────
+
+    private void verificarEnArray(String[] puertos, Promise promise) {
+        for (String puerto : puertos) {
             if (new File(puerto).exists()) {
                 promise.resolve(true);
                 return;
@@ -48,14 +85,13 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         promise.resolve(false);
     }
 
-    @ReactMethod
-    public void imprimirTicket(ReadableMap datos, Promise promise) {
-        try {
-            byte[] ticket = construirTicket(datos);
-            escribirPuerto(ticket, promise);
-        } catch (Exception e) {
-            promise.reject("IMPRESORA_ERROR", e.getMessage(), e);
+    private String[] arrayDesdeReadable(ReadableArray arr, String[] fallback) {
+        if (arr == null || arr.size() == 0) return fallback;
+        String[] resultado = new String[arr.size()];
+        for (int i = 0; i < arr.size(); i++) {
+            resultado[i] = arr.getString(i);
         }
+        return resultado;
     }
 
     private byte[] construirTicket(ReadableMap d) throws IOException {
@@ -142,7 +178,6 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
     }
 
     private String sep() {
-        // 32 caracteres exactos
         return "================================";
     }
 
@@ -172,8 +207,9 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         return map.hasKey(key) && !map.isNull(key) ? map.getInt(key) : 0;
     }
 
-    private void escribirPuerto(byte[] datos, Promise promise) {
-        for (String puerto : PUERTOS) {
+    private void escribirPuerto(byte[] datos, String[] puertos, Promise promise) {
+        StringBuilder intentados = new StringBuilder();
+        for (String puerto : puertos) {
             File f = new File(puerto);
             if (!f.exists()) continue;
             try (FileOutputStream fos = new FileOutputStream(f)) {
@@ -182,10 +218,10 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
                 promise.resolve(puerto);
                 return;
             } catch (IOException e) {
-                // Intentar siguiente puerto
+                intentados.append(puerto).append(" ");
             }
         }
         promise.reject("IMPRESORA_NO_DISPONIBLE",
-            "No se pudo escribir en /dev/ttyS1 ni /dev/ttyS2");
+            "No se encontró ningún puerto disponible. Intentados: " + intentados.toString().trim());
     }
 }

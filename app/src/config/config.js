@@ -16,4 +16,12 @@ export const CONFIG = {
 
   // ── Temporada actual (2 dígitos — valida los QR escaneados) ──────────────
   TEMPORADA_ACTUAL: '26',
+
+  // ── Impresora térmica ESC/POS ─────────────────────────────────────────────
+  // Puertos serie a probar en orden. Varía según el modelo del dispositivo.
+  // Q2I usa ttyS1 o ttyS2. Otros modelos pueden usar ttyS3–ttyS5.
+  IMPRESORA: {
+    PUERTOS: ['/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyS5'],
+    ANCHO_LINEA: 32,
+  },
 };
