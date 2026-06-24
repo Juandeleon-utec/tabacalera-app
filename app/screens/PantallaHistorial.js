@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import {
   listarEnviosResumenPorUsuarioYFecha,
+  listarTodosEnviosResumenPorUsuario,
   listarFardosPorEnvio,
 } from '../services/baseDeDatos';
 import {
@@ -52,6 +53,7 @@ export default function PantallaHistorial({ navigation, route }) {
   const { sesion } = route.params;
 
   const [fecha, setFecha] = useState(hoy());
+  const [mostrarTodos, setMostrarTodos] = useState(false);
   const [envios, setEnvios] = useState([]);
   const [cargando, setCargando] = useState(false);
 
@@ -65,7 +67,9 @@ export default function PantallaHistorial({ navigation, route }) {
   const cargarEnvios = useCallback(async () => {
     setCargando(true);
     try {
-      const lista = await listarEnviosResumenPorUsuarioYFecha(sesion?.id ?? 0, fecha);
+      const lista = mostrarTodos
+        ? await listarTodosEnviosResumenPorUsuario(sesion?.id ?? 0)
+        : await listarEnviosResumenPorUsuarioYFecha(sesion?.id ?? 0, fecha);
       setEnvios(lista);
     } catch (e) {
       Alert.alert('Error', 'No se pudieron cargar los envíos');
@@ -73,7 +77,7 @@ export default function PantallaHistorial({ navigation, route }) {
     } finally {
       setCargando(false);
     }
-  }, [fecha, sesion]);
+  }, [fecha, sesion, mostrarTodos]);
 
   useEffect(() => {
     cargarEnvios();
@@ -140,6 +144,10 @@ export default function PantallaHistorial({ navigation, route }) {
 
   function renderEnvio({ item }) {
     const sincronizado = item.sincronizado === 1;
+    const colorSync = sincronizado ? COLORES.valido : COLORES.duplicado;
+    const transporte = item.transportista_empresa
+      ? `${item.transportista_empresa}${item.transportista_chofer ? ' · ' + item.transportista_chofer : ''}`
+      : null;
     return (
       <TouchableOpacity style={estilos.itemEnvio} onPress={() => abrirDetalle(item)}>
         <View style={estilos.itemFila}>
@@ -150,16 +158,19 @@ export default function PantallaHistorial({ navigation, route }) {
             <Text style={estilos.nombreAgricultor} numberOfLines={1}>
               {item.agricultor_nombre}
             </Text>
+            {transporte && (
+              <Text style={estilos.itemTransporte} numberOfLines={1}>{transporte}</Text>
+            )}
             <Text style={estilos.itemMeta}>
-              {formatearHora(item.hora)} · {item.total_validos ?? 0} válidos · {item.total_fardos ?? 0} total
+              {mostrarTodos && item.fecha ? `${item.fecha} · ` : ''}{formatearHora(item.hora)} · {item.total_validos ?? 0} válidos
             </Text>
           </View>
           <View style={estilos.syncCol}>
-            <Text style={[estilos.syncIcono, { color: sincronizado ? COLORES.valido : COLORES.duplicado }]}>
+            <Text style={[estilos.syncIcono, { color: colorSync }]}>
               {sincronizado ? '✓' : '⏳'}
             </Text>
-            <Text style={[estilos.syncLabel, { color: sincronizado ? COLORES.valido : COLORES.duplicado }]}>
-              {sincronizado ? 'Sync' : 'Pend.'}
+            <Text style={[estilos.syncLabel, { color: colorSync }]}>
+              {sincronizado ? 'Sincronizado' : 'Pendiente'}
             </Text>
           </View>
         </View>
@@ -175,25 +186,41 @@ export default function PantallaHistorial({ navigation, route }) {
     <View style={estilos.contenedor}>
       {/* Navegación de fecha */}
       <View style={estilos.navFecha}>
-        <TouchableOpacity style={estilos.botonDia} onPress={() => setFecha(f => sumarDias(f, -1))}>
-          <Text style={estilos.botonDiaTexto}>‹</Text>
-        </TouchableOpacity>
+        {!mostrarTodos && (
+          <TouchableOpacity style={estilos.botonDia} onPress={() => setFecha(f => sumarDias(f, -1))}>
+            <Text style={estilos.botonDiaTexto}>‹</Text>
+          </TouchableOpacity>
+        )}
         <View style={estilos.fechaContenedor}>
-          <Text style={estilos.fechaTexto} numberOfLines={1}>{formatearFechaLarga(fecha)}</Text>
-          {esHoy && <Text style={estilos.hoyBadge}>HOY</Text>}
+          {mostrarTodos ? (
+            <Text style={estilos.fechaTexto}>Todos los envíos</Text>
+          ) : (
+            <>
+              <Text style={estilos.fechaTexto} numberOfLines={1}>{formatearFechaLarga(fecha)}</Text>
+              {esHoy && <Text style={estilos.hoyBadge}>HOY</Text>}
+            </>
+          )}
         </View>
-        <TouchableOpacity style={estilos.botonDia} onPress={() => setFecha(f => sumarDias(f, 1))}>
-          <Text style={estilos.botonDiaTexto}>›</Text>
+        {!mostrarTodos && (
+          <TouchableOpacity style={estilos.botonDia} onPress={() => setFecha(f => sumarDias(f, 1))}>
+            <Text style={estilos.botonDiaTexto}>›</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={[estilos.botonTodos, mostrarTodos && estilos.botonTodosActivo]}
+          onPress={() => setMostrarTodos(t => !t)}
+        >
+          <Text style={estilos.botonTodosTexto}>{mostrarTodos ? 'Por fecha' : 'Todos'}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Resumen del día */}
+      {/* Resumen */}
       {!cargando && totalDia > 0 && (
         <View style={estilos.resumenDia}>
           <Text style={estilos.resumenTexto}>
             {totalDia} envío{totalDia !== 1 ? 's' : ''} · {totalValidosDia} fardos válidos en total
           </Text>
-          {!esHoy && (
+          {!esHoy && !mostrarTodos && (
             <TouchableOpacity onPress={() => setFecha(hoy())}>
               <Text style={estilos.botonHoyTexto}>Ir a hoy</Text>
             </TouchableOpacity>
@@ -207,9 +234,11 @@ export default function PantallaHistorial({ navigation, route }) {
       ) : envios.length === 0 ? (
         <View style={estilos.vacio}>
           <Text style={estilos.textoVacio}>
-            No hay envíos registrados{'\n'}para esta fecha.
+            {mostrarTodos
+              ? 'No hay envíos registrados.'
+              : `No hay envíos registrados\npara esta fecha.`}
           </Text>
-          {!esHoy && (
+          {!esHoy && !mostrarTodos && (
             <TouchableOpacity style={estilos.botonHoy} onPress={() => setFecha(hoy())}>
               <Text style={estilos.botonHoyTextoBtn}>Ir a hoy</Text>
             </TouchableOpacity>
@@ -260,6 +289,19 @@ export default function PantallaHistorial({ navigation, route }) {
               <Text style={estilos.modalInfoTexto}>
                 Fecha: {envioSeleccionado?.fecha}
               </Text>
+              {envioSeleccionado?.transportista_empresa ? (
+                <Text style={estilos.modalInfoTexto}>
+                  Transporte: {envioSeleccionado.transportista_empresa}
+                  {envioSeleccionado.transportista_chofer
+                    ? ` · ${envioSeleccionado.transportista_chofer}`
+                    : ''}
+                </Text>
+              ) : null}
+              {envioSeleccionado?.observaciones ? (
+                <Text style={estilos.modalInfoTexto}>
+                  Obs.: {envioSeleccionado.observaciones}
+                </Text>
+              ) : null}
               {envioSeleccionado?.gps_lat && envioSeleccionado?.gps_lng && (
                 <Text style={estilos.modalInfoTexto}>
                   GPS: {parseFloat(envioSeleccionado.gps_lat).toFixed(4)},{' '}
@@ -349,6 +391,12 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 6, paddingVertical: 1,
     fontSize: 10, color: COLORES.textoBlanco, fontWeight: 'bold',
   },
+  botonTodos: {
+    marginLeft: 4, paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 4, borderWidth: 1, borderColor: COLORES.sobrePrimario,
+  },
+  botonTodosActivo: { backgroundColor: COLORES.acento, borderColor: COLORES.acento },
+  botonTodosTexto: { color: COLORES.textoBlanco, fontSize: 11, fontWeight: '600' },
 
   // ── Resumen del día ────────────────────────────────────────────────────────
   resumenDia: {
@@ -374,10 +422,11 @@ const estilos = StyleSheet.create({
   codigoTexto: { color: COLORES.textoBlanco, fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' },
   itemDatos: { flex: 1 },
   nombreAgricultor: { fontSize: 14, color: COLORES.texto, fontWeight: '500' },
+  itemTransporte: { fontSize: 11, color: COLORES.textoClaro, marginTop: 1 },
   itemMeta: { fontSize: 12, color: COLORES.textoClaro, marginTop: 2 },
-  syncCol: { alignItems: 'center', minWidth: 40 },
+  syncCol: { alignItems: 'center', minWidth: 64 },
   syncIcono: { fontSize: 16, fontWeight: 'bold' },
-  syncLabel: { fontSize: 10 },
+  syncLabel: { fontSize: 9, textAlign: 'center' },
 
   // ── Estado vacío ──────────────────────────────────────────────────────────
   vacio: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },

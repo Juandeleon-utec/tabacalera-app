@@ -149,7 +149,7 @@ export default function PantallaLogin({ navigation }) {
             activeOpacity={1}
           >
             <Image
-              source={require('../assets/logo.png')}
+              source={require('../assets/Montepaz_Blanco.png')}
               style={estilos.logo}
               resizeMode="contain"
             />

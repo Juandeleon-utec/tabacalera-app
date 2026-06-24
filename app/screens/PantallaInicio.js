@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { listarAgricultores, buscarAgricultores } from '../services/baseDeDatos';
-import { sincronizarEnviosPendientes, hayConectividadConServidor } from '../services/sincronizacion';
+import { sincronizarEnviosPendientes, hayConectividadConServidor, actualizarTransportistas } from '../services/sincronizacion';
 import { cerrarSesion } from '../services/autenticacion';
 import COLORES from '../constants/colores';
 
@@ -16,6 +16,8 @@ export default function PantallaInicio({ navigation, route }) {
   const [cargando, setCargando] = useState(true);
   const [gps, setGps] = useState(null);
   const [sincronizandoAuto, setSincronizandoAuto] = useState(false);
+  const [hayConexion, setHayConexion] = useState(false);
+  const [actualizandoTransp, setActualizandoTransp] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -81,8 +83,9 @@ export default function PantallaInicio({ navigation, route }) {
 
   async function ejecutarSyncAutomatica() {
     try {
-      const hayConexion = await hayConectividadConServidor();
-      if (hayConexion) {
+      const conectado = await hayConectividadConServidor();
+      setHayConexion(conectado);
+      if (conectado) {
         setSincronizandoAuto(true);
         const resultado = await sincronizarEnviosPendientes();
         if (resultado.sincronizados > 0) {
@@ -93,6 +96,22 @@ export default function PantallaInicio({ navigation, route }) {
       console.warn('[SYNC AUTO]', error.message);
     } finally {
       setSincronizandoAuto(false);
+    }
+  }
+
+  async function manejarActualizarTransportistas() {
+    if (!hayConexion) {
+      Alert.alert('Sin conexión', 'Sin conexión al servidor. Conectate a la red interna.');
+      return;
+    }
+    setActualizandoTransp(true);
+    try {
+      const { cantidad } = await actualizarTransportistas();
+      Alert.alert('Transportistas actualizados', `${cantidad} transportista${cantidad !== 1 ? 's' : ''} actualizados.`);
+    } catch (error) {
+      Alert.alert('Error', error.message || 'No se pudieron actualizar los transportistas.');
+    } finally {
+      setActualizandoTransp(false);
     }
   }
 
@@ -170,6 +189,25 @@ export default function PantallaInicio({ navigation, route }) {
         />
       </View>
 
+      {/* Botón actualizar transportistas */}
+      <View style={estilos.barraAcciones}>
+        <TouchableOpacity
+          style={[estilos.botonActualizar, (!hayConexion || actualizandoTransp) && estilos.botonActualizarDeshabilitado]}
+          onPress={manejarActualizarTransportistas}
+          disabled={!hayConexion || actualizandoTransp}
+        >
+          {actualizandoTransp
+            ? <ActivityIndicator size="small" color={COLORES.textoBlanco} style={{ marginRight: 6 }} />
+            : null}
+          <Text style={estilos.botonActualizarTexto}>
+            {actualizandoTransp ? 'Actualizando...' : 'Actualizar transportistas'}
+          </Text>
+        </TouchableOpacity>
+        {!hayConexion && (
+          <Text style={estilos.textoSinConexion}>Sin conexión al servidor</Text>
+        )}
+      </View>
+
       <Text style={estilos.instruccion}>
         Seleccione el agricultor para iniciar el escaneo de fardos
       </Text>
@@ -211,6 +249,20 @@ const estilos = StyleSheet.create({
     borderWidth: 1, borderColor: COLORES.borde, borderRadius: 8,
     padding: 10, fontSize: 14, color: COLORES.texto, backgroundColor: COLORES.fondoInputAlt,
   },
+  barraAcciones: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: COLORES.fondoTarjeta,
+    borderBottomWidth: 1, borderBottomColor: COLORES.borde,
+  },
+  botonActualizar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORES.acento, borderRadius: 6,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  botonActualizarDeshabilitado: { backgroundColor: COLORES.secundario },
+  botonActualizarTexto: { color: COLORES.textoBlanco, fontSize: 13, fontWeight: '600' },
+  textoSinConexion: { fontSize: 11, color: COLORES.textoClaro, flex: 1 },
   instruccion: {
     fontSize: 13, color: COLORES.textoClaro, paddingHorizontal: 16,
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORES.borde,

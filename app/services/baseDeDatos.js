@@ -302,3 +302,32 @@ export async function listarEnviosResumenPorUsuarioYFecha(usuarioId, fecha) {
     [usuarioId, fecha]
   );
 }
+
+export async function listarTodosEnviosResumenPorUsuario(usuarioId) {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getAllAsync(
+    `SELECT e.*,
+       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id AND f.valido = 1) AS total_validos,
+       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id) AS total_fardos,
+       t.empresa AS transportista_empresa,
+       t.nombre_chofer AS transportista_chofer,
+       t.matricula AS transportista_matricula
+     FROM envios e
+     LEFT JOIN transportistas t ON e.transportista_id = t.id
+     WHERE e.usuario_id = ?
+     ORDER BY e.fecha DESC, e.hora DESC`,
+    [usuarioId]
+  );
+}
+
+export async function reemplazarTransportistas(transportistas) {
+  const baseDatos = obtenerDB();
+  await baseDatos.runAsync('DELETE FROM transportistas');
+  for (const t of transportistas) {
+    await baseDatos.runAsync(
+      `INSERT INTO transportistas (id, empresa, nombre_chofer, documento, matricula, activo)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [t.id, t.empresa, t.nombre_chofer, t.documento || null, t.matricula, 1]
+    );
+  }
+}

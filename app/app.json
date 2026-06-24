@@ -7,7 +7,7 @@
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/Montepaz_Blanco.png",
       "resizeMode": "contain",
       "backgroundColor": "#6B5333"
     },
@@ -22,7 +22,7 @@
     "android": {
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/montepaz_Icono.png",
         "backgroundColor": "#6B5333"
       },
       "package": "com.montepaz.tabacalera",

@@ -21,6 +21,7 @@ const Pila = createNativeStackNavigator();
 export default function App() {
   const [cargando, setCargando] = useState(true);
   const [rutaInicial, setRutaInicial] = useState('Login');
+  const [sesionInicial, setSesionInicial] = useState(null);
 
   useEffect(() => {
     async function inicializar() {
@@ -29,6 +30,7 @@ export default function App() {
         const sesion = await obtenerSesionActiva();
         if (sesion) {
           setRutaInicial(sesion.rol === 'superadmin' ? 'Admin' : 'Inicio');
+          setSesionInicial(sesion);
         }
       } catch (error) {
         console.error('Error al inicializar la app:', error);
@@ -72,6 +74,7 @@ export default function App() {
         <Pila.Screen
           name="Inicio"
           component={PantallaInicio}
+          initialParams={{ sesion: sesionInicial }}
           options={{ title: 'Seleccionar Agricultor', headerBackVisible: false }}
         />
         <Pila.Screen

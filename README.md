@@ -203,6 +203,28 @@ Si no se realiza una sincronización en 7 días, la app bloquea el acceso a los 
  - pm2 restart tabacalera-backend
  - pm2 logs tabacalera-backend
 
+## TESTE de APK
+ - cd C:\Users\jdeleon\github\tabacalera-app\app
+ - npx expo start
+ - Escanear el QR con EXPO GO en Celular y verificar
+
+### Si todo OK
+ - Actualizar GitHUB
+ - eas build --platform android --profile production
+
+## Configuracion de environment de APP
+ - # URL base del servidor backend (red interna)
+ - API_URL=http://192.168.4.202:3000
+ - # Credenciales del superadmin local (hardcodeado en la app)
+ - SUPERADMIN_USUARIO=admin
+ - SUPERADMIN_PASSWORD=Admin2026!
+
+ - # Días de gracia antes de bloquear por falta de sync
+ - DIAS_VENCIMIENTO_SESION=14
+ - # Temporada actual (año en 2 dígitos, se usa para validar los QR)
+ - TEMPORADA_ACTUAL=26
+
+
 ## Estructura de archivos
 
 ```

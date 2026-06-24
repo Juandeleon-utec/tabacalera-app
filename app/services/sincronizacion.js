@@ -2,6 +2,7 @@ import {
   guardarUsuarios,
   guardarAgricultores,
   guardarTransportistas,
+  reemplazarTransportistas,
   guardarInfoSync,
   listarEnviosNosincronizados,
   listarFardosPorEnvio,
@@ -55,6 +56,21 @@ export async function sincronizacionInicial(onProgreso) {
     transportistas: transportistas.length,
     sync_at: datos.sync_at,
   };
+}
+
+/**
+ * Descarga y reemplaza la tabla local de transportistas.
+ * Disponible para cualquier usuario logueado con conexión al servidor.
+ */
+export async function actualizarTransportistas() {
+  const conectado = await hayConectividadConServidor();
+  if (!conectado) {
+    throw new Error('Sin conexión al servidor. Conectate a la red interna.');
+  }
+  const datos = await descargarDatosSync();
+  const transportistas = datos.transportistas || [];
+  await reemplazarTransportistas(transportistas);
+  return { cantidad: transportistas.length };
 }
 
 /**
