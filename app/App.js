@@ -11,6 +11,7 @@ import COLORES from './constants/colores';
 import PantallaLogin from './screens/PantallaLogin';
 import PantallaAdmin from './screens/PantallaAdmin';
 import PantallaInicio from './screens/PantallaInicio';
+import PantallaTransporte from './screens/PantallaTransporte';
 import PantallaEscaner from './screens/PantallaEscaner';
 import PantallaEnvio from './screens/PantallaEnvio';
 import PantallaHistorial from './screens/PantallaHistorial';
@@ -72,6 +73,11 @@ export default function App() {
           name="Inicio"
           component={PantallaInicio}
           options={{ title: 'Seleccionar Agricultor', headerBackVisible: false }}
+        />
+        <Pila.Screen
+          name="Transporte"
+          component={PantallaTransporte}
+          options={{ title: 'Datos del Transporte' }}
         />
         <Pila.Screen
           name="Escaner"

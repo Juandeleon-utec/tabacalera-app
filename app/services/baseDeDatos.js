@@ -35,6 +35,15 @@ export async function inicializarBaseDeDatos() {
       activo INTEGER DEFAULT 1
     );
 
+    CREATE TABLE IF NOT EXISTS transportistas (
+      id INTEGER PRIMARY KEY,
+      empresa TEXT NOT NULL,
+      nombre_chofer TEXT NOT NULL,
+      documento TEXT,
+      matricula TEXT NOT NULL,
+      activo INTEGER DEFAULT 1
+    );
+
     CREATE TABLE IF NOT EXISTS envios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_local TEXT UNIQUE NOT NULL,
@@ -42,6 +51,9 @@ export async function inicializarBaseDeDatos() {
       agricultor_id INTEGER NOT NULL,
       agricultor_codigo TEXT NOT NULL,
       agricultor_nombre TEXT NOT NULL,
+      transportista_id INTEGER,
+      documento_chofer_real TEXT,
+      observaciones TEXT,
       fecha TEXT NOT NULL,
       hora TEXT NOT NULL,
       gps_lat REAL,
@@ -51,7 +63,8 @@ export async function inicializarBaseDeDatos() {
       sincronizado_at TEXT,
       created_at TEXT NOT NULL,
       FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-      FOREIGN KEY (agricultor_id) REFERENCES agricultores(id)
+      FOREIGN KEY (agricultor_id) REFERENCES agricultores(id),
+      FOREIGN KEY (transportista_id) REFERENCES transportistas(id)
     );
 
     CREATE TABLE IF NOT EXISTS fardos (
@@ -73,6 +86,20 @@ export async function inicializarBaseDeDatos() {
 
     INSERT OR IGNORE INTO sincronizacion (id) VALUES (1);
   `);
+
+  // Migración: agregar columnas nuevas a instalaciones existentes
+  const migraciones = [
+    'ALTER TABLE envios ADD COLUMN transportista_id INTEGER',
+    'ALTER TABLE envios ADD COLUMN documento_chofer_real TEXT',
+    'ALTER TABLE envios ADD COLUMN observaciones TEXT',
+  ];
+  for (const sql of migraciones) {
+    try {
+      await baseDatos.runAsync(sql);
+    } catch {
+      // La columna ya existe — ignorar
+    }
+  }
 }
 
 // ─── Usuarios ────────────────────────────────────────────────────────────────
@@ -94,6 +121,31 @@ export async function buscarUsuarioPorNombre(nombreUsuario) {
     'SELECT * FROM usuarios WHERE usuario = ?',
     [nombreUsuario]
   );
+}
+
+// ─── Transportistas ───────────────────────────────────────────────────────────
+
+export async function guardarTransportistas(transportistas) {
+  const baseDatos = obtenerDB();
+  for (const t of transportistas) {
+    await baseDatos.runAsync(
+      `INSERT OR REPLACE INTO transportistas (id, empresa, nombre_chofer, documento, matricula, activo)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [t.id, t.empresa, t.nombre_chofer, t.documento || null, t.matricula, 1]
+    );
+  }
+}
+
+export async function listarTransportistas() {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getAllAsync(
+    'SELECT * FROM transportistas WHERE activo = 1 ORDER BY empresa ASC, nombre_chofer ASC'
+  );
+}
+
+export async function obtenerTransportistaPorId(id) {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getFirstAsync('SELECT * FROM transportistas WHERE id = ?', [id]);
 }
 
 // ─── Agricultores ─────────────────────────────────────────────────────────────
@@ -132,14 +184,18 @@ export async function crearEnvio(datos) {
   const ahora = new Date().toISOString();
   const resultado = await baseDatos.runAsync(
     `INSERT INTO envios (id_local, usuario_id, agricultor_id, agricultor_codigo, agricultor_nombre,
+      transportista_id, documento_chofer_real, observaciones,
       fecha, hora, gps_lat, gps_lng, estado, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierto', ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierto', ?)`,
     [
       datos.id_local,
       datos.usuario_id,
       datos.agricultor_id,
       datos.agricultor_codigo,
       datos.agricultor_nombre,
+      datos.transportista_id || null,
+      datos.documento_chofer_real || null,
+      datos.observaciones || null,
       datos.fecha,
       datos.hora,
       datos.gps_lat || null,
@@ -235,8 +291,12 @@ export async function listarEnviosResumenPorUsuarioYFecha(usuarioId, fecha) {
   return await baseDatos.getAllAsync(
     `SELECT e.*,
        (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id AND f.valido = 1) AS total_validos,
-       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id) AS total_fardos
+       (SELECT COUNT(*) FROM fardos f WHERE f.envio_id = e.id) AS total_fardos,
+       t.empresa AS transportista_empresa,
+       t.nombre_chofer AS transportista_chofer,
+       t.matricula AS transportista_matricula
      FROM envios e
+     LEFT JOIN transportistas t ON e.transportista_id = t.id
      WHERE e.usuario_id = ? AND e.fecha = ?
      ORDER BY e.hora DESC`,
     [usuarioId, fecha]

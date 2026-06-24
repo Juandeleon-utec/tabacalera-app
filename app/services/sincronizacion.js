@@ -1,6 +1,7 @@
 import {
   guardarUsuarios,
   guardarAgricultores,
+  guardarTransportistas,
   guardarInfoSync,
   listarEnviosNosincronizados,
   listarFardosPorEnvio,
@@ -40,6 +41,10 @@ export async function sincronizacionInicial(onProgreso) {
   onProgreso(`Guardando ${datos.agricultores.length} agricultores...`);
   await guardarAgricultores(datos.agricultores);
 
+  const transportistas = datos.transportistas || [];
+  onProgreso(`Guardando ${transportistas.length} transportistas...`);
+  await guardarTransportistas(transportistas);
+
   onProgreso('Guardando información de sincronización...');
   await guardarInfoSync(datos.token_sync);
 
@@ -47,6 +52,7 @@ export async function sincronizacionInicial(onProgreso) {
   return {
     usuarios: datos.usuarios.length,
     agricultores: datos.agricultores.length,
+    transportistas: transportistas.length,
     sync_at: datos.sync_at,
   };
 }
@@ -70,6 +76,9 @@ export async function sincronizarEnviosPendientes() {
         id_local: envio.id_local,
         usuario_id: envio.usuario_id,
         agricultor_id: envio.agricultor_id,
+        transportista_id: envio.transportista_id || null,
+        documento_chofer_real: envio.documento_chofer_real || null,
+        observaciones: envio.observaciones || null,
         fecha: envio.fecha,
         hora: envio.hora,
         gps_lat: envio.gps_lat,

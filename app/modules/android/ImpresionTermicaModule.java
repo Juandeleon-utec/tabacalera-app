@@ -99,13 +99,13 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
 
         String agricultor = transliterar(getString(d, "agricultor"));
         String codigo     = getString(d, "codigo");
+        String empresa    = transliterar(getString(d, "empresa"));
+        String chofer     = transliterar(getString(d, "chofer"));
+        String matricula  = getString(d, "matricula");
         String fecha      = getString(d, "fecha");
         String hora       = getString(d, "hora");
         String operador   = transliterar(getString(d, "operador"));
-        int totalValidos     = getInt(d, "totalValidos");
-        int totalInvalidos   = getInt(d, "totalInvalidos");
-        int totalDuplicados  = getInt(d, "totalDuplicados");
-        int totalFardos      = totalValidos + totalInvalidos;
+        int totalValidos  = getInt(d, "totalValidos");
         ReadableArray qrList = d.hasKey("fardosValidos") ? d.getArray("fardosValidos") : null;
 
         // ── Cabecera ────────────────────────────────────────────────
@@ -118,10 +118,27 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         escribe(out, sep());
         out.write(LF);
 
-        // ── Datos del envío ─────────────────────────────────────────
+        // ── Agricultor ──────────────────────────────────────────────
         out.write(LEFT);
         escribeLinea(out, "Agricultor:", recortar(agricultor, 19));
         escribeLinea(out, "Codigo:    ", codigo);
+        escribe(out, subSep());
+        out.write(LF);
+
+        // ── Transporte ──────────────────────────────────────────────
+        if (!empresa.isEmpty()) {
+            escribeLinea(out, "Empresa:   ", recortar(empresa, 20));
+        }
+        if (!chofer.isEmpty()) {
+            escribeLinea(out, "Chofer:    ", recortar(chofer, 20));
+        }
+        if (!matricula.isEmpty()) {
+            escribeLinea(out, "Matricula: ", matricula);
+        }
+        escribe(out, subSep());
+        out.write(LF);
+
+        // ── Fecha / Hora / Operador ─────────────────────────────────
         escribeLinea(out, "Fecha:     ", fecha);
         escribeLinea(out, "Hora:      ", hora);
         escribeLinea(out, "Operador:  ", recortar(operador, 20));
@@ -144,20 +161,10 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         escribe(out, sep());
         out.write(LF);
 
-        // ── Totales ─────────────────────────────────────────────────
-        escribeLinea(out, "Validos:   ", String.valueOf(totalValidos));
-        escribeLinea(out, "Invalidos: ", String.valueOf(totalInvalidos));
-        escribeLinea(out, "Duplicados:", String.valueOf(totalDuplicados));
-        escribeLinea(out, "Total:     ", String.valueOf(totalFardos));
-        escribe(out, sep());
-        out.write(LF);
-
-        // ── Pie ─────────────────────────────────────────────────────
-        out.write(CENTER);
-        escribe(out, "Firmado digitalmente en app");
-        out.write(LF);
-        escribe(out, "Tabacalera Montepaz v1.0");
-        out.write(LF);
+        // ── Total válidos ───────────────────────────────────────────
+        out.write(BOLD_ON);
+        escribeLinea(out, "Total validos:", String.valueOf(totalValidos));
+        out.write(BOLD_OFF);
         escribe(out, sep());
         out.write(LF);
 
@@ -179,6 +186,10 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
 
     private String sep() {
         return "================================";
+    }
+
+    private String subSep() {
+        return "--------------------------------";
     }
 
     private String recortar(String texto, int max) {

@@ -108,10 +108,19 @@ export default function PantallaHistorial({ navigation, route }) {
       let rutaPDF = await buscarPDFGuardado(envioSeleccionado);
 
       if (!rutaPDF) {
-        // No existe → regenerar y guardar
+        // Reconstruir objeto transportista desde columnas desnormalizadas del JOIN
+        const transportista = envioSeleccionado.transportista_empresa
+          ? {
+              empresa: envioSeleccionado.transportista_empresa,
+              nombre_chofer: envioSeleccionado.transportista_chofer,
+              matricula: envioSeleccionado.transportista_matricula,
+            }
+          : null;
+
         const datosEnvio = {
           ...envioSeleccionado,
           comprador_nombre: sesion?.nombre,
+          transportista,
         };
         const uriTemporal = await generarPDFEnvio(datosEnvio, fardosDetalle);
         const { ruta } = await guardarPDFEnDispositivo(uriTemporal, envioSeleccionado);

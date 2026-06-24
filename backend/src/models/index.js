@@ -20,6 +20,7 @@ const sequelize = new Sequelize(
 
 const Usuario = require('./Usuario')(sequelize);
 const Agricultor = require('./Agricultor')(sequelize);
+const Transportista = require('./Transportista')(sequelize);
 const Envio = require('./Envio')(sequelize);
 const Fardo = require('./Fardo')(sequelize);
 
@@ -30,7 +31,10 @@ Envio.belongsTo(Usuario, { foreignKey: 'usuario_id', as: 'usuario' });
 Agricultor.hasMany(Envio, { foreignKey: 'agricultor_id', as: 'envios' });
 Envio.belongsTo(Agricultor, { foreignKey: 'agricultor_id', as: 'agricultor' });
 
+Transportista.hasMany(Envio, { foreignKey: 'transportista_id', as: 'envios' });
+Envio.belongsTo(Transportista, { foreignKey: 'transportista_id', as: 'transportista' });
+
 Envio.hasMany(Fardo, { foreignKey: 'envio_id', as: 'fardos' });
 Fardo.belongsTo(Envio, { foreignKey: 'envio_id', as: 'envio' });
 
-module.exports = { sequelize, Usuario, Agricultor, Envio, Fardo };
+module.exports = { sequelize, Usuario, Agricultor, Transportista, Envio, Fardo };

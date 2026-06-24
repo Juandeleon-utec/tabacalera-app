@@ -34,9 +34,13 @@ export async function imprimirComprobante(envio, fardos, sesion) {
       f.motivo_invalido?.toLowerCase().includes('duplicado')
   ).length;
 
+  const t = envio.transportista;
   const datos = {
     agricultor: envio.agricultor_nombre || '',
     codigo: envio.agricultor_codigo || '',
+    empresa: t?.empresa || '',
+    chofer: t?.nombre_chofer || '',
+    matricula: t?.matricula || '',
     fecha: envio.fecha || '',
     hora: envio.hora || '',
     operador: sesion?.nombre || '',

@@ -4,10 +4,9 @@ import {
   TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { listarAgricultores, buscarAgricultores, crearEnvio } from '../services/baseDeDatos';
+import { listarAgricultores, buscarAgricultores } from '../services/baseDeDatos';
 import { sincronizarEnviosPendientes, hayConectividadConServidor } from '../services/sincronizacion';
 import { cerrarSesion } from '../services/autenticacion';
-import { generarIdLocal } from '../utils/uuid';
 import COLORES from '../constants/colores';
 
 export default function PantallaInicio({ navigation, route }) {
@@ -97,39 +96,8 @@ export default function PantallaInicio({ navigation, route }) {
     }
   }
 
-  async function seleccionarAgricultor(agricultor) {
-    const ahora = new Date();
-    const fecha = ahora.toISOString().split('T')[0];
-    const hora = ahora.toTimeString().split(' ')[0];
-
-    const idLocal = generarIdLocal();
-
-    try {
-      const envioId = await crearEnvio({
-        id_local: idLocal,
-        usuario_id: sesion?.id || 0,
-        agricultor_id: agricultor.id,
-        agricultor_codigo: agricultor.codigo_6dig,
-        agricultor_nombre: agricultor.nombre,
-        fecha,
-        hora,
-        gps_lat: gps?.lat || null,
-        gps_lng: gps?.lng || null,
-      });
-
-      navigation.navigate('Escaner', {
-        envioId,
-        idLocal,
-        agricultor,
-        sesion,
-        fecha,
-        hora,
-        gps,
-      });
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo iniciar el envío');
-      console.error('[CREAR ENVIO]', error);
-    }
+  function seleccionarAgricultor(agricultor) {
+    navigation.navigate('Transporte', { agricultor, sesion, gps });
   }
 
   async function manejarCerrarSesion() {

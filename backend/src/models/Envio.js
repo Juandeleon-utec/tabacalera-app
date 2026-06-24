@@ -41,6 +41,18 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    transportista_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    documento_chofer_real: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    observaciones: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     sincronizado_at: {
       type: DataTypes.DATE,
       allowNull: true,

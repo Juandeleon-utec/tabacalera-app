@@ -12,7 +12,7 @@ import COLORES from '../constants/colores';
 const PANTALLA = Dimensions.get('window');
 
 export default function PantallaEscaner({ navigation, route }) {
-  const { envioId, idLocal, agricultor, sesion, fecha, hora, gps } = route.params;
+  const { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, sesion, fecha, hora, gps } = route.params;
 
   const [permiso, solicitarPermiso] = useCameraPermissions();
   const [escaneando, setEscaneando] = useState(true);
@@ -79,7 +79,7 @@ export default function PantallaEscaner({ navigation, route }) {
       Alert.alert('Sin fardos válidos', 'No hay fardos válidos para cerrar el envío.');
       return;
     }
-    navigation.navigate('Envio', { envioId, idLocal, agricultor, sesion, fecha, hora, gps });
+    navigation.navigate('Envio', { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, sesion, fecha, hora, gps });
   }
 
   if (!permiso) return <View style={estilos.contenedor} />;

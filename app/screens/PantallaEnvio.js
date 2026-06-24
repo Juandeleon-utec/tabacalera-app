@@ -10,7 +10,7 @@ import ItemFardo from '../components/ItemFardo';
 import COLORES from '../constants/colores';
 
 export default function PantallaEnvio({ navigation, route }) {
-  const { envioId, idLocal, agricultor, sesion, fecha, hora, gps } = route.params;
+  const { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, sesion, fecha, hora, gps } = route.params;
 
   const [fardos, setFardos] = useState([]);
   const [envio, setEnvio] = useState(null);
@@ -71,6 +71,9 @@ export default function PantallaEnvio({ navigation, route }) {
         agricultor_codigo: agricultor.codigo_6dig,
         agricultor_nombre: agricultor.nombre,
         comprador_nombre: sesion?.nombre,
+        transportista: transportista || null,
+        documento_chofer_real: documentoChoferReal || envio?.documento_chofer_real || null,
+        observaciones: observaciones || envio?.observaciones || null,
       };
       const uriTemporal = await generarPDFEnvio(datosEnvio, fardos);
       const { ruta, nombreArchivo, guardadoEnDescargasPublicas } =
@@ -109,6 +112,7 @@ export default function PantallaEnvio({ navigation, route }) {
         ...envio,
         agricultor_codigo: agricultor.codigo_6dig,
         agricultor_nombre: agricultor.nombre,
+        transportista: transportista || null,
       };
       await imprimirComprobante(datosEnvio, fardos, sesion);
       Alert.alert('Impresión exitosa', 'El comprobante fue enviado a la impresora.');

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { soloRedInterna } = require('../middleware/ipWhitelist');
 const { generarToken } = require('../middleware/auth');
-const { Usuario, Agricultor } = require('../models');
+const { Usuario, Agricultor, Transportista } = require('../models');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -21,6 +21,11 @@ router.get('/', soloRedInterna, async (req, res) => {
       attributes: ['id', 'codigo_6dig', 'nombre', 'direccion', 'telefono', 'departamento'],
     });
 
+    const transportistas = await Transportista.findAll({
+      where: { activo: true },
+      attributes: ['id', 'empresa', 'nombre_chofer', 'documento', 'matricula'],
+    });
+
     // Generar un token JWT de sincronización para que la app pueda
     // enviar los envíos posteriormente
     const tokenSync = generarToken({ tipo: 'app_sync', timestamp: Date.now() });
@@ -31,6 +36,7 @@ router.get('/', soloRedInterna, async (req, res) => {
       token_sync: tokenSync,
       usuarios: usuarios.map((u) => u.toJSON()),
       agricultores: agricultores.map((a) => a.toJSON()),
+      transportistas: transportistas.map((t) => t.toJSON()),
     });
   } catch (error) {
     console.error('[SYNC GET]', error);

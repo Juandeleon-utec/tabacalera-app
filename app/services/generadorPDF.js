@@ -60,9 +60,8 @@ function estadoFardo(fardo) {
 }
 
 function generarHtmlRemito(envio, fardos) {
-  const totalValidos = fardos.filter((f) => estadoFardo(f) === 'valido').length;
-  const totalDuplicados = fardos.filter((f) => estadoFardo(f) === 'duplicado').length;
-  const totalInvalidos = fardos.filter((f) => estadoFardo(f) === 'invalido').length;
+  const fardosValidos = fardos.filter((f) => estadoFardo(f) === 'valido');
+  const totalValidos = fardosValidos.length;
 
   const fechaFormateada = envio.fecha
     ? envio.fecha.split('-').reverse().join('/')
@@ -70,27 +69,14 @@ function generarHtmlRemito(envio, fardos) {
         day: '2-digit', month: '2-digit', year: 'numeric',
       });
 
-  const filasFardos = fardos
+  const filasFardos = fardosValidos
     .map((f, i) => {
-      const estado = estadoFardo(f);
       const colorFila = i % 2 === 0 ? '#F9F6F0' : '#FFFFFF';
-      const [colorEstado, textoEstado] =
-        estado === 'valido'
-          ? [COLORES.valido, '✓ Válido']
-          : estado === 'duplicado'
-          ? [COLORES.duplicado, '✗ Duplicado']
-          : [COLORES.invalido, '✗ Inválido'];
-
       return `
         <tr style="background:${colorFila}">
           <td style="padding:5px 8px;text-align:center;color:#888">${i + 1}</td>
           <td style="padding:5px 8px;font-family:monospace;font-size:12px;letter-spacing:1px">${f.codigo_qr}</td>
-          <td style="padding:5px 8px;font-size:11px;color:${colorEstado};font-weight:600">${textoEstado}</td>
-          <td style="padding:5px 8px;font-size:11px;color:#999">${
-            !f.valido && f.motivo_invalido
-              ? f.motivo_invalido.split(':')[0]
-              : ''
-          }</td>
+          <td style="padding:5px 8px;font-size:11px;color:${COLORES.valido};font-weight:600">✓ Válido</td>
         </tr>
       `;
     })
@@ -100,6 +86,18 @@ function generarHtmlRemito(envio, fardos) {
     envio.gps_lat && envio.gps_lng
       ? `${parseFloat(envio.gps_lat).toFixed(6)}, ${parseFloat(envio.gps_lng).toFixed(6)}`
       : 'No registrada';
+
+  const t = envio.transportista;
+  const seccionTransporte = t ? `
+    <h2>Transporte</h2>
+    <div class="grid">
+      <div class="dato"><b>Empresa:</b> ${t.empresa || ''}</div>
+      <div class="dato"><b>Chofer:</b> ${t.nombre_chofer || ''}</div>
+      <div class="dato"><b>Matrícula:</b> ${t.matricula || ''}</div>
+      ${envio.documento_chofer_real ? `<div class="dato"><b>Documento:</b> ${envio.documento_chofer_real}</div>` : ''}
+      ${envio.observaciones ? `<div class="dato" style="grid-column:span 2"><b>Observaciones:</b> ${envio.observaciones}</div>` : ''}
+    </div>
+  ` : '';
 
   return `
     <!DOCTYPE html>
@@ -118,9 +116,8 @@ function generarHtmlRemito(envio, fardos) {
         table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
         th{background:${COLORES.primario};color:white;padding:7px 8px;text-align:left;font-size:11px}
         td{border-bottom:1px solid #E6DFD2}
-        .resumen{margin-top:16px;background:${COLORES.fondoInfo};border:1px solid ${COLORES.bordeValido};border-radius:5px;padding:12px 16px}
-        .resumen p{margin:3px 0;font-size:12px}
-        .resumen .total{font-size:15px;font-weight:bold;color:${COLORES.primario}}
+        .total-validos{margin-top:16px;background:${COLORES.fondoInfo};border:1px solid ${COLORES.bordeValido};border-radius:5px;padding:12px 16px}
+        .total-validos p{margin:0;font-size:15px;font-weight:bold;color:${COLORES.primario}}
         .firma{margin-top:44px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
         .firma div{border-top:1px solid #999;padding-top:6px;text-align:center;font-size:11px;color:#555}
         .pie{margin-top:20px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #E6DFD2;padding-top:8px}
@@ -147,24 +144,22 @@ function generarHtmlRemito(envio, fardos) {
         <div class="dato"><b>Ubicación GPS:</b> ${gpsTexto}</div>
       </div>
 
-      <h2>Fardos escaneados (${fardos.length})</h2>
+      ${seccionTransporte}
+
+      <h2>Fardos válidos (${totalValidos})</h2>
       <table>
         <thead>
           <tr>
             <th style="width:36px">#</th>
             <th>Código QR</th>
-            <th style="width:90px">Estado</th>
-            <th>Motivo</th>
+            <th style="width:80px">Estado</th>
           </tr>
         </thead>
         <tbody>${filasFardos}</tbody>
       </table>
 
-      <div class="resumen">
-        <p class="total">Fardos válidos: ${totalValidos}</p>
-        <p>Duplicados: ${totalDuplicados}</p>
-        <p>Inválidos: ${totalInvalidos}</p>
-        <p style="margin-top:6px;font-weight:600">Total escaneados: ${fardos.length}</p>
+      <div class="total-validos">
+        <p>Total fardos válidos: ${totalValidos}</p>
       </div>
 
       <div class="firma">
