@@ -195,6 +195,14 @@ Si no se realiza una sincronización en 7 días, la app bloquea el acceso a los 
 
 ---
 
+## Actualizacion del backend
+ - cd ~/node_app/tabacalera-app
+ - git pull origin main
+ - cd backend
+ - npm install
+ - pm2 restart tabacalera-backend
+ - pm2 logs tabacalera-backend
+
 ## Estructura de archivos
 
 ```
