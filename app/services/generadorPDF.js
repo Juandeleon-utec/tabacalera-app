@@ -3,8 +3,8 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import COLORES from '../constants/colores';
 
-const NOMBRE_EMPRESA = 'Montepaz';
-const SUBTITULO_EMPRESA = 'Tabacalera — Desde 1880';
+const NOMBRE_EMPRESA = 'C.I.T.M.P.S.A.';
+const SUBTITULO_EMPRESA = 'Tabacalera Montepaz S.A.';
 
 // Rutas de almacenamiento (externa primero, interna como fallback)
 export const CARPETA_PDF_EXTERNA = 'file:///storage/emulated/0/Download/Montepaz/';

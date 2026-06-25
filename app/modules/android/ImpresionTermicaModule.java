@@ -112,7 +112,7 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         out.write(INIT);
         out.write(CENTER);
         out.write(BOLD_ON);
-        escribe(out, "MONTEPAZ - Desde 1880");
+        escribe(out, "MONTEPAZ - Rivera-Artigas");
         out.write(LF);
         out.write(BOLD_OFF);
         escribe(out, sep());
