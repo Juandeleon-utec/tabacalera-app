@@ -107,6 +107,7 @@ export default function PantallaEscaner({ navigation, route }) {
         <CameraView
           style={estilos.camara}
           facing="back"
+          autofocus="on"
           onBarcodeScanned={pausado ? undefined : manejarQRescaneado}
           barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39'] }}
         >
@@ -118,6 +119,9 @@ export default function PantallaEscaner({ navigation, route }) {
               <View style={[estilos.esquina, estilos.esquinaInferiorIzq]} />
               <View style={[estilos.esquina, estilos.esquinaInferiorDer]} />
             </View>
+            {!pausado && (
+              <Text style={estilos.textoBuscando}>Buscando QR...</Text>
+            )}
           </View>
 
           {/* Agricultor info */}
@@ -173,7 +177,7 @@ export default function PantallaEscaner({ navigation, route }) {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: COLORES.fondoOscuro },
   camaraContenedor: { height: PANTALLA.height * 0.38 },
-  camara: { flex: 1 },
+  camara: { flex: 1, width: '100%', height: '100%' },
   marcoOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -183,6 +187,10 @@ const estilos = StyleSheet.create({
   marcoEscaneo: {
     width: 220, height: 220,
     backgroundColor: 'transparent',
+  },
+  textoBuscando: {
+    position: 'absolute', top: '58%',
+    color: COLORES.textoBlanco, fontSize: 13, fontWeight: '600',
   },
   esquina: {
     position: 'absolute', width: 30, height: 30,
