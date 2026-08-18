@@ -302,4 +302,4 @@ Reemplazar `app/assets/logo.png` con el logo oficial de la empresa.
 
 ## Licencia
 
-Uso interno — Montepaz S.A.
+Juan Pedro de León
