@@ -1,7 +1,6 @@
 # Tabacalera App — Sistema de compra de fardos de tabaco
 
 Sistema completo para registrar la compra de fardos de tabaco en campo, compuesto por:
-
 - **`app/`** — Aplicación móvil Android (React Native + Expo)
 - **`backend/`** — API REST interna (Node.js + Express + MySQL)
 
@@ -16,214 +15,333 @@ Sistema completo para registrar la compra de fardos de tabaco en campo, compuest
 ```
 
 La app funciona **100% offline**. Solo necesita WiFi interno para:
-1. Sincronización inicial (descargar usuarios y agricultores)
-2. Envío automático de remitos cerrados al servidor
+1. Sincronización inicial (descargar usuarios, agricultores y transportistas)
+2. Actualización de transportistas (puede hacerla cualquier usuario logueado)
+3. Envío automático de remitos cerrados al servidor
 
 ---
 
 ## Instalación del Backend
 
 ### Requisitos
-
-- Node.js >= 18
-- MySQL >= 8.0
-- npm >= 9
+- Node.js >= 22 (versión LTS activa — v18 llegó a fin de vida)
+- MySQL >= 8.4
+- npm >= 10
+- Ubuntu Server 24.04 LTS (recomendado)
+- PM2: `npm install -g pm2`
 
 ### Pasos
 
 ```bash
 cd backend
-
 # Instalar dependencias
 npm install
 
 # Copiar y editar la configuración
 cp .env.example .env
-nano .env   # Editar DB_HOST, DB_USER, DB_PASS, DB_NAME, JWT_SECRET, ALLOWED_IPS
-
-# Crear la base de datos en MySQL
-mysql -u root -p -e "CREATE DATABASE tabacalera_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p -e "CREATE USER 'tabacalera_user'@'localhost' IDENTIFIED BY 'tu_password';"
-mysql -u root -p -e "GRANT ALL PRIVILEGES ON tabacalera_db.* TO 'tabacalera_user'@'localhost';"
-mysql -u root -p -e "FLUSH PRIVILEGES;"
-
-# Crear las tablas
-npm run db:migrate
-
-# Cargar datos de prueba (opcional)
-npm run db:seed
-
-# Iniciar en desarrollo
-npm run dev
-
-# Iniciar en producción
-npm start
+nano .env
 ```
 
-### Variables de entorno (.env)
+### Variables de entorno del backend (.env)
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `DB_HOST` | Host MySQL | `localhost` |
+| Variable | Descripción | Valor actual |
+|----------|-------------|--------------|
+| `DB_HOST` | IP del servidor MySQL | `192.168.4.202` |
 | `DB_PORT` | Puerto MySQL | `3306` |
-| `DB_USER` | Usuario MySQL | `tabacalera_user` |
-| `DB_PASS` | Contraseña MySQL | `password_seguro` |
-| `DB_NAME` | Nombre de la BD | `tabacalera_db` |
-| `JWT_SECRET` | Secreto JWT (largo y aleatorio) | `abc123...xyz` |
-| `JWT_EXPIRES_IN` | Duración del token | `7d` |
+| `DB_USER` | Usuario MySQL | `root` |
+| `DB_PASS` | Contraseña MySQL | *(configurada en servidor)* |
+| `DB_NAME` | Nombre de la BD | `tabacalera` |
+| `JWT_SECRET` | Secreto JWT | *(configurado en servidor)* |
+| `JWT_EXPIRES_IN` | Duración del token | `14d` |
 | `PORT` | Puerto del servidor | `3000` |
-| `ALLOWED_IPS` | IPs permitidas para `/api/sync` | `127.0.0.1,192.168.1.0/24` |
+| `NODE_ENV` | Entorno | `production` |
+| `ALLOWED_IPS` | Redes permitidas para `/api/sync` | `127.0.0.1,192.168.4.0/24,192.168.5.0/24,192.168.0.0/24` |
+| `ADMIN_PASSWORD_HASH` | Hash bcrypt del superadmin | *(generado con bcrypt)* |
+
+> **Nota:** La base de datos `tabacalera` debe existir antes de iniciar.
+> Las tablas se crean automáticamente al arrancar (Sequelize sync).
+
+### Tablas creadas automáticamente por Sequelize
+- `usuarios` — usuarios de campo + superadmin
+- `agricultores` — productores registrados
+- `transportistas` — empresas transportistas y choferes
+- `envios` — registros de compra de fardos
+- `fardos` — códigos QR escaneados por envío
+
+### Iniciar en producción con PM2
+
+```bash
+pm2 start src/app.js --name tabacalera-backend
+pm2 save
+pm2 startup   # Ejecutar el comando que genera para arranque automático
+```
 
 ### Endpoints API
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| `GET` | `/api/health` | No | Estado del servidor |
-| `GET` | `/api/sync` | Solo red interna | Descarga usuarios + agricultores |
+| `GET` | `/api/sync` | Solo red interna | Descarga usuarios + agricultores + transportistas |
 | `POST` | `/api/envios/sync` | JWT | Sube envíos cerrados desde la app |
 | `GET` | `/api/envios` | JWT | Lista todos los envíos |
-| `GET` | `/api/envios/:id` | JWT | Detalle de un envío |
+| `GET` | `/api/envios/:id` | JWT | Detalle de un envío con fardos |
 
 ---
 
 ## Instalación de la App
 
 ### Requisitos
-
-- Node.js >= 18
-- npm >= 9
-- Expo CLI: `npm install -g expo-cli`
-- EAS CLI (para build APK): `npm install -g eas-cli`
-- Android Studio (para emulador) o dispositivo físico Android
+- Node.js >= 22
+- npm >= 10
+- EAS CLI: `npm install -g eas-cli`
+- Cuenta Expo: [expo.dev](https://expo.dev)
 
 ### Pasos (desarrollo)
 
 ```bash
 cd app
-
-# Instalar dependencias
 npm install
-
-# Copiar y editar la configuración
-cp .env.example .env
-nano .env   # Editar API_URL, SUPERADMIN_PASSWORD, etc.
-
-# Reemplazar el logo placeholder
-# Copiar su logo en: app/assets/logo.png
-# Recomendado: PNG cuadrado 512x512px con fondo transparente o sólido
-
-# Iniciar el servidor de desarrollo
-npm start
-# o directamente para Android:
-npm run android
+npx expo login
+npx expo start
 ```
 
-### Build APK de producción (instalación directa en los 10 dispositivos)
+Escanear el QR con **Expo Go** en el dispositivo Android para probar.
+
+> **Importante:** Expo Go tiene limitaciones con librerías nativas
+> (impresora térmica). Para prueba completa usar la APK de producción.
+
+### Variables de entorno de la app (.env)
+
+| Variable | Descripción | Valor actual |
+|----------|-------------|--------------|
+| `API_URL` | URL del servidor backend | `http://192.168.4.202:3000` |
+| `SUPERADMIN_USUARIO` | Usuario del superadmin local | `admin` |
+| `SUPERADMIN_PASSWORD` | Contraseña del superadmin | `Admin2026!` |
+| `DIAS_VENCIMIENTO_SESION` | Días antes de requerir re-sync | `14` |
+| `TEMPORADA_ACTUAL` | Año en 2 dígitos para validar QR | `26` |
+
+> **Nota:** Estas variables se embeben en el momento de compilación.
+> Si cambiás alguna, hay que recompilar la APK.
+
+---
+
+## Compilación y distribución de la APK
+
+### Build APK de producción
 
 ```bash
 cd app
 
-# 1. Iniciar sesión en Expo
+# 1. Iniciar sesión en Expo (si no estás logueado)
 npx expo login
 
-# 2. Compilar el APK en la nube (EAS Build)
+# 2. Compilar la APK en la nube (EAS Build)
 eas build --platform android --profile production
 
-# 3. Descargar el APK del enlace que genera EAS al finalizar
-
-# 4. Instalar en cada dispositivo vía ADB
+# 3. Descargar la APK del link que genera EAS al finalizar
+# 4. Instalar en cada dispositivo manualmente o por ADB:
 adb install tabacalera-montepaz.apk
-# o copiar el APK al dispositivo y abrirlo manualmente
 ```
 
-> El perfil `production` genera un APK (no AAB) listo para instalación directa sin Play Store.
-> El build se realiza en la nube de EAS; no requiere Android Studio local.
+> El perfil `production` genera una APK (no AAB) lista para
+> instalación directa sin Play Store.
+> El build se realiza en la nube de EAS; no requiere Android Studio.
 
-### Actualizar `extra.eas.projectId` en app.json
+### Plan gratuito de EAS
+- **15 builds Android por mes** (se resetea el 1 de cada mes)
+- **Timeout:** 45 minutos por build
+- Suficiente para este proyecto de uso interno
 
-Tras ejecutar `eas build:configure` por primera vez, EAS asigna un `projectId`.
-Reemplazar `"TU_PROJECT_ID_AQUI"` en `app.json` con ese valor.
+### Actualizar el número de versión antes de cada build
 
-### Variables de entorno de la app (.env)
+En `app/app.json`, incrementar ambos valores:
+```json
+"version": "1.0.x",
+"versionCode": x
+```
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `API_URL` | URL del servidor backend | `http://192.168.1.100:3000` |
-| `SUPERADMIN_USUARIO` | Usuario del superadmin local | `admin` |
-| `SUPERADMIN_PASSWORD` | Contraseña del superadmin | `AdminTabacalera2024!` |
-| `DIAS_VENCIMIENTO_SESION` | Días antes de requerir re-sync | `7` |
-| `TEMPORADA_ACTUAL` | Año en 2 dígitos para validar QR | `26` |
+### Historial de versiones
+
+| Versión | versionCode | Fecha | Descripción |
+|---------|-------------|-------|-------------|
+| 1.0.0 | 1 | 06/2026 | Versión inicial |
+| 1.0.1 | 2 | 06/2026 | Corrección cleartext HTTP |
+| 1.0.2 | 3 | 06/2026 | Transportistas + historial + PDF sin rechazados |
+| 1.0.3 | 4 | 06/2026 | Correcciones historial + saludo + actualización transportistas |
+| 1.0.4 | 5 | 06/2026 | Mejoras escáner QR compatibilidad Android moderno |
 
 ---
 
 ## Flujo de uso
 
 ### Primera vez (sincronización inicial)
-
 1. El dispositivo debe estar en la **red WiFi interna** de la empresa.
-2. Ingresar con usuario `admin` y la contraseña configurada en `.env`.
-3. Presionar **"Sincronizar ahora"**.
-4. La app descarga usuarios y agricultores desde el servidor.
+2. Ingresar con usuario `admin` y la contraseña configurada.
+3. Presionar **"Sincronizar todo"**.
+4. La app descarga usuarios, agricultores y transportistas desde el servidor.
 5. Cerrar sesión admin. Los compradores de campo ya pueden ingresar.
 
 ### Uso diario (compradores de campo)
-
 1. Ingresar con usuario y contraseña de comprador.
 2. Seleccionar el agricultor de la lista.
-3. Escanear los fardos con la cámara del dispositivo.
-4. Al terminar, presionar **"Cerrar envío"**.
-5. Generar y compartir el PDF por WhatsApp u otras apps.
-6. Cuando haya WiFi interno, los envíos se sincronizan automáticamente.
+3. Seleccionar empresa transportista y chofer.
+4. Completar datos opcionales (documento, observaciones).
+5. Escanear los fardos con la cámara del dispositivo.
+6. Al terminar, presionar **"Cerrar envío"**.
+7. El PDF se guarda automáticamente en `/Downloads/Montepaz/`.
+8. Compartir el PDF por WhatsApp si corresponde.
+9. Opcionalmente imprimir el ticket en el PDA Q2I.
+10. Cuando haya WiFi interno, los envíos se sincronizan automáticamente.
+
+### Actualizar transportistas (usuario de campo)
+- Estando en la red interna, presionar **"Actualizar transportistas"**
+  desde la pantalla principal.
+- No requiere ser superadmin.
+- Los agricultores **no** se actualizan por esta vía (solo sync completa del admin).
 
 ### Formato del código QR
-
 ```
 AAAAAABBBBBBB
 │     │
 │     └── 7 dígitos: BB = año temporada (ej: 26), BBBBB = secuencial
 └──────── 6 dígitos: código del agricultor
 ```
-
-Ejemplo: `1000012601234`
-- `100001` = código agricultor
+Ejemplo: `1235552600001`
+- `123555` = código agricultor
 - `26` = temporada 2026
-- `01234` = número secuencial del fardo
+- `00001` = número secuencial del fardo
 
 ### Vencimiento de sesión
-
-Si no se realiza una sincronización en 7 días, la app bloquea el acceso a los compradores y solicita que el superadmin realice una nueva sync.
+Si no se realiza una sincronización en **14 días**, la app bloquea
+el acceso a los compradores y solicita que el superadmin realice
+una nueva sync.
 
 ---
 
-## Actualizacion del backend
- - cd ~/node_app/tabacalera-app
- - git pull origin main
- - cd backend
- - npm install
- - pm2 restart tabacalera-backend
- - pm2 logs tabacalera-backend
+## Actualización del backend en el servidor
 
-## TESTE de APK
- - cd C:\Users\jdeleon\github\tabacalera-app\app
- - npx expo start
- - Escanear el QR con EXPO GO en Celular y verificar
+```bash
+# Conectarse al servidor
+ssh administrador@192.168.4.202
 
-### Si todo OK
- - Actualizar GitHUB
- - eas build --platform android --profile production
+# Actualizar código y reiniciar
+cd ~/node_app/tabacalera-app && git pull origin main && cd backend && npm install && pm2 restart tabacalera-backend && pm2 logs tabacalera-backend
+```
 
-## Configuracion de environment de APP
- - # URL base del servidor backend (red interna)
- - API_URL=http://192.168.4.202:3000
- - # Credenciales del superadmin local (hardcodeado en la app)
- - SUPERADMIN_USUARIO=admin
- - SUPERADMIN_PASSWORD=Admin2026!
+Verificar que los logs muestren:
+```
+Conexión a MySQL establecida correctamente.
+Modelos sincronizados con la base de datos.
+Servidor tabacalera corriendo en puerto 3000
+```
 
- - # Días de gracia antes de bloquear por falta de sync
- - DIAS_VENCIMIENTO_SESION=14
- - # Temporada actual (año en 2 dígitos, se usa para validar los QR)
- - TEMPORADA_ACTUAL=26
+Salir de los logs con `Ctrl+C`.
 
+---
+
+## Generación del hash de contraseña (bcrypt)
+
+Para generar el hash de una contraseña nueva (usuarios o superadmin):
+
+```bash
+cd ~/node_app/tabacalera-app/backend
+node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('la_contraseña', 10).then(h => console.log(h));"
+```
+
+---
+
+## Trabajo con múltiples PCs de desarrollo
+
+Este proyecto usa **Git + GitHub** como fuente única de verdad.
+Seguir siempre este flujo para evitar conflictos:
+
+### Al comenzar a trabajar en cualquier PC
+
+```bash
+cd ruta/al/proyecto/tabacalera-app
+git pull origin main
+```
+
+> **Siempre hacer pull antes de empezar a editar.**
+
+### Al terminar de trabajar
+
+```bash
+cd ruta/al/proyecto/tabacalera-app
+git add .
+git commit -m "descripción clara del cambio"
+git push origin main
+```
+
+### Si hay conflictos al hacer pull
+
+Ocurre cuando dos PCs modificaron el mismo archivo. Git lo indica así:
+```
+CONFLICT (content): Merge conflict in app/screens/PantallaLogin.js
+```
+
+Opciones para resolver:
+
+**Opción A — Quedarse con la versión del servidor (GitHub):**
+```bash
+git fetch origin
+git reset --hard origin/main
+```
+> ⚠️ Esto descarta todos los cambios locales no commiteados.
+
+**Opción B — Resolver manualmente:**
+```bash
+# Abrir el archivo en conflicto en VS Code
+code app/screens/PantallaLogin.js
+# Buscar las marcas <<<<<<< HEAD y elegir qué versión conservar
+git add .
+git commit -m "resolver conflicto en PantallaLogin"
+git push origin main
+```
+
+### Flujo recomendado con dos PCs
+
+```
+PC Principal (Windows - desarrollo)
+  → Hacer cambios
+  → git add . && git commit -m "..." && git push origin main
+  → eas build (si hay cambios nativos)
+
+PC Secundaria (cualquier OS)
+  → git pull origin main  ← SIEMPRE primero
+  → Hacer cambios
+  → git add . && git commit -m "..." && git push origin main
+
+Servidor Ubuntu (192.168.4.202)
+  → git pull origin main
+  → npm install && pm2 restart tabacalera-backend
+```
+
+### Autenticación GitHub en el servidor Ubuntu
+
+El servidor usa token de acceso personal (PAT) para autenticarse.
+Si expira el token, generá uno nuevo en:
+**GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+- Scope: solo `repo`
+- Luego actualizar en el servidor:
+```bash
+git remote set-url origin https://Juandeleon-utec:TOKEN_NUEVO@github.com/Juandeleon-utec/tabacalera-app.git
+```
+
+---
+
+## Credenciales y configuración del sistema
+
+| Parámetro | Valor |
+|-----------|-------|
+| Servidor backend | `192.168.4.202:3000` |
+| Base de datos | `tabacalera` |
+| Repositorio GitHub | `github.com/Juandeleon-utec/tabacalera-app` |
+| Proyecto Expo | `juanpdeleon/tabacalera-app` |
+| Superadmin app | `admin` / `Admin2026!` |
+| Temporada actual | `26` |
+| Redes internas habilitadas | `192.168.4.x`, `192.168.5.x`, `192.168.0.x` |
+
+---
 
 ## Estructura de archivos
 
@@ -233,26 +351,37 @@ tabacalera-app/
 ├── README.md
 ├── app/
 │   ├── App.js                    # Entry point y navegación
-│   ├── app.json                  # Configuración Expo
+│   ├── app.json                  # Configuración Expo + EAS
+│   ├── eas.json                  # Perfiles de compilación EAS
 │   ├── package.json
 │   ├── babel.config.js
 │   ├── .env.example
 │   ├── assets/
-│   │   └── logo.png              # Logo de la empresa (reemplazar)
+│   │   ├── logo.png              # Logo app (blanco, para splash/login)
+│   │   ├── logo-pdf.png          # Logo en color para PDF
+│   │   ├── icon.png              # Ícono app Android (1024x1024)
+│   │   └── adaptive-icon.png     # Ícono adaptativo Android
+│   ├── constants/
+│   │   └── colores.js            # Paleta de colores única de la app
+│   ├── config/
+│   │   └── config.js             # Configuración central (API_URL, etc.)
 │   ├── screens/
 │   │   ├── PantallaLogin.js      # Login para todos los usuarios
-│   │   ├── PantallaAdmin.js      # Panel superadmin (solo sync)
-│   │   ├── PantallaInicio.js     # Selector de agricultor
+│   │   ├── PantallaAdmin.js      # Panel superadmin (sync inicial)
+│   │   ├── PantallaInicio.js     # Selector de agricultor + transportista
 │   │   ├── PantallaEscaner.js    # Cámara + validación QR en tiempo real
-│   │   └── PantallaEnvio.js      # Resumen + cerrar + PDF
+│   │   ├── PantallaEnvio.js      # Resumen + cerrar + PDF + imprimir
+│   │   └── PantallaHistorial.js  # Historial de envíos con filtro por fecha
 │   ├── components/
 │   │   └── ItemFardo.js          # Fila de la lista de fardos
+│   ├── plugins/
+│   │   └── withImpresionTermica.js # Plugin nativo impresora Q2I
 │   ├── services/
 │   │   ├── baseDeDatos.js        # SQLite: todas las operaciones
 │   │   ├── autenticacion.js      # Login, sesión, vencimiento
 │   │   ├── api.js                # Llamadas axios al backend
 │   │   ├── validadorQR.js        # Lógica de validación del código QR
-│   │   ├── generadorPDF.js       # Generación y compartir PDF
+│   │   ├── generadorPDF.js       # Generación PDF (expo-print)
 │   │   └── sincronizacion.js     # Sync inicial + sync automática
 │   └── utils/
 │       └── uuid.js               # Generador de IDs locales
@@ -268,6 +397,7 @@ tabacalera-app/
         │   ├── index.js          # Sequelize + relaciones
         │   ├── Usuario.js
         │   ├── Agricultor.js
+        │   ├── Transportista.js  # ← Agregado
         │   ├── Envio.js
         │   └── Fardo.js
         ├── routes/
@@ -283,23 +413,24 @@ tabacalera-app/
 ## Seguridad
 
 - Las contraseñas de usuarios se almacenan con **bcrypt** (salt rounds = 10).
-- El superadmin local tiene credenciales hardcodeadas en `.env` (nunca commitear `.env`).
-- El endpoint `/api/sync` solo responde a IPs de la red interna (configurable en `ALLOWED_IPS`).
+- El superadmin local tiene credenciales en `config.js` (no commitear con datos reales).
+- El endpoint `/api/sync` solo responde a IPs de las redes internas configuradas en `ALLOWED_IPS`.
 - Los envíos al servidor requieren token JWT obtenido en la sync inicial.
 - Si un usuario es desactivado en el servidor, queda bloqueado en la próxima sync.
+- Si el dispositivo no sincroniza en 14 días, la sesión vence automáticamente.
+- La app solo se comunica con el servidor por WiFi interno, nunca por 4G/5G.
 
 ---
 
-## Logo
+## Hardware soportado
 
-Reemplazar `app/assets/logo.png` con el logo oficial de la empresa.
-
-- Formato: PNG
-- Tamaño recomendado: **512×512 px** (mínimo 256×256)
-- Fondo: transparente o sólido oscuro (el splash usa fondo `#1B4332`)
+| Dispositivo | Escáner QR | GPS | Impresora térmica | PDF |
+|-------------|-----------|-----|-------------------|-----|
+| PDA Q2I (S3220) | ✅ | ✅ | ✅ ESC/POS 58mm | ✅ |
+| Celular Android moderno | ✅ | ✅ | ❌ | ✅ |
+| Tablet Android | ✅ | ✅ | ❌ | ✅ |
 
 ---
-
 ## Licencia
 
-Juan Pedro de León
+Uso interno — Montepaz S.A.
