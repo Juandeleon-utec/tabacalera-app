@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <!-- Permitir HTTP cleartext para la red interna (192.168.x.x) -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">192.168.4.202</domain>
+    <domain includeSubdomains="false">192.168.4.1</domain>
+    <domain includeSubdomains="false">192.168.1.1</domain>
+  </domain-config>
+  <!-- Permitir cleartext en cualquier IP de red privada como fallback -->
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>
