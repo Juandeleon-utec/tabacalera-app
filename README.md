@@ -594,11 +594,8 @@ Logo: reemplazar `app/assets/logo.png`
 ---
 # Licencia
 
-Software desarrollado por **Juan De León** para uso exclusivo de
-Compañía Industrial de Tabacos Monte Paz S.A.
+Software desarrollado por **Juan De León** para uso exclusivo de **Compañía Industrial de Tabacos Monte Paz S.A.**
 
 La propiedad intelectual del código, arquitectura y diseño del sistema pertenece al autor. Montepaz posee licencia de uso exclusivo para sus operaciones internas. Queda prohibida la redistribución, copia o reutilización del software sin autorización expresa del autor.
 
-© 2026 Juan De León — Todos los derechos reservados.
-Licencia
-Uso interno — Compañía Industrial de Tabacos Monte Paz S.A.
+**© 2026 Juan De León — Todos los derechos reservados.**
