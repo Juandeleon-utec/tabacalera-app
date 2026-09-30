@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Panel de Administración</h1>
+            <nav class="admin-menu">
+                <button onclick="cargarContenido('usuarios')">Usuarios</button>
+                <button onclick="cargarContenido('transportistas')">Transportistas</button>
+                <button onclick="cerrarSesion()">Salir</button>
+            </nav>
+        </header>
+
+        <main class="admin-main">
+            <div id="contenido-principal"></div>
+        </main>
+    </div>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Verificar si hay sesión activa al cargar la página
+        window.addEventListener('load', function() {
+            verificarSesion();
+        });
+    </script>
+</body>
+</html>

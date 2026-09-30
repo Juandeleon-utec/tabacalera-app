@@ -2,9 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
+const session = require('express-session');
 
 const routeSync = require('./routes/sync');
 const routeEnvios = require('./routes/envios');
+const routeAdmin = require('./routes/admin');
 
 const app = express();
 const PUERTO = process.env.PORT || 3000;
@@ -13,9 +15,27 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware de sesión
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'tabacalera_secret_2026',
+  name: 'tabacalera_sid',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    maxAge: 15 * 60 * 1000, // 15 minutos
+    sameSite: 'strict'
+  }
+}));
+
 // Rutas
 app.use('/api/sync', routeSync);
 app.use('/api/envios', routeEnvios);
+app.use(routeAdmin);
+
+// Servir archivos estáticos del panel de administración
+app.use('/admin', express.static('frontend/src/admin'));
 
 // Salud del servidor
 app.get('/api/health', (req, res) => {

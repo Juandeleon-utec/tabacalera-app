@@ -1,0 +1,771 @@
+You are analyzing an existing software project called tabacalera-app.
+
+This is a REAL, currently functional application.
+
+Your task in this session is to understand the complete system deeply enough
+that future modifications can be made without breaking existing behavior.
+
+IMPORTANT:
+
+This task is ANALYSIS AND DOCUMENTATION ONLY.
+
+DO NOT implement new features.
+DO NOT create new panels.
+DO NOT refactor application code.
+DO NOT fix problems.
+DO NOT update dependencies.
+DO NOT change configuration.
+DO NOT modify the database.
+DO NOT alter API behavior.
+DO NOT change authentication.
+DO NOT modify application source code.
+
+The ONLY file you are allowed to create or modify is:
+
+docs/AI_SYSTEM_ANALYSIS.md
+
+==================================================
+EVIDENCE RULE
+==================================================
+
+Every technical statement in the final document must be supported by
+source files that you actually inspect during this task.
+
+DO NOT use assumptions or generic software knowledge to fill gaps.
+
+DO NOT invent:
+
+- fields;
+- endpoints;
+- roles;
+- database relationships;
+- synchronization behavior;
+- security behavior;
+- retry logic;
+- migrations;
+- tests;
+- configuration.
+
+If something cannot be verified from the repository, write:
+
+NOT DETERMINED
+
+When possible, include the source file beside the conclusion.
+
+==================================================
+FILES / DIRECTORIES TO IGNORE
+==================================================
+
+Do NOT inspect dependency or generated directories unless absolutely necessary.
+
+Ignore:
+
+node_modules/
+.expo/
+android/build/
+android/app/build/
+build/
+dist/
+coverage/
+.git/
+
+Do not search TypeScript files unless the application source actually uses them.
+
+Prioritize application source code only.
+
+==================================================
+OBJECTIVE
+==================================================
+
+Build a complete technical model of tabacalera-app.
+
+Understand:
+
+1. Repository structure
+2. Mobile application architecture
+3. Backend architecture
+4. SQLite local database
+5. MySQL / Sequelize database
+6. Authentication
+7. Authorization
+8. API routes
+9. Middleware
+10. Navigation
+11. Application screens
+12. Business workflow
+13. QR / Fardo workflow
+14. Envio lifecycle
+15. Backend → Mobile synchronization
+16. Mobile → Backend synchronization
+17. Error handling
+18. Configuration
+19. External dependencies
+20. Tests
+21. High-risk components
+22. Dependency / impact map
+
+Do not stop after a high-level summary.
+
+Inspect the actual implementation.
+
+==================================================
+PHASE 1 — REPOSITORY INVENTORY
+==================================================
+
+Inspect the repository structure.
+
+Identify:
+
+- app/
+- backend/
+- package.json files;
+- entry points;
+- screens;
+- components;
+- services;
+- utilities;
+- routes;
+- middleware;
+- models;
+- database files;
+- configuration;
+- migrations;
+- seeds;
+- tests;
+- scripts;
+- existing documentation.
+
+Create an internal inventory before drawing conclusions.
+
+==================================================
+PHASE 2 — HIGH-LEVEL ARCHITECTURE
+==================================================
+
+Determine the actual architecture from code.
+
+Create a textual architecture diagram.
+
+For example:
+
+Mobile UI
+   ↓
+Services
+   ↓
+SQLite
+   ↕
+Synchronization
+   ↓
+HTTP API
+   ↓
+Express
+   ↓
+Sequelize
+   ↓
+MySQL
+
+This is only an example.
+
+Use the REAL architecture found in the repository.
+
+==================================================
+PHASE 3 — MOBILE APPLICATION
+==================================================
+
+Inspect:
+
+app/App.js
+app/screens/
+app/components/
+app/services/
+app/utils/
+app/constants/
+app/src/config/
+
+Document:
+
+- navigation;
+- screens;
+- screen responsibilities;
+- services used by each screen;
+- SQLite access;
+- API access;
+- authentication/session use;
+- important navigation parameters;
+- user roles visible in the application.
+
+Create:
+
+| Screen | Source file | Purpose | Data used | Services called | Navigates to |
+
+Do not infer behavior from filenames alone.
+
+==================================================
+PHASE 4 — SQLITE LOCAL DATABASE
+==================================================
+
+Inspect the actual SQLite creation and access code.
+
+Document:
+
+- database filename;
+- initialization;
+- PRAGMA statements;
+- migration logic;
+- every table;
+- every field;
+- PK;
+- FK;
+- UNIQUE;
+- NOT NULL;
+- DEFAULT;
+- relationships;
+- indexes;
+- CHECK constraints if present.
+
+For each table create:
+
+| Field | SQLite type | PK | FK | UNIQUE | NOT NULL | Default |
+
+Document all database functions:
+
+| Function | Table(s) | Operation | Purpose |
+
+Separate:
+
+- READ;
+- CREATE;
+- UPDATE;
+- DELETE;
+- UPSERT;
+- synchronization-state functions.
+
+Identify pure read-only functions that could later support dashboards/panels.
+
+Do NOT propose panels yet.
+
+==================================================
+PHASE 5 — SEQUELIZE / MYSQL MODEL
+==================================================
+
+Inspect every backend Sequelize model and model association.
+
+For every model document:
+
+- model name;
+- source file;
+- database table;
+- fields;
+- Sequelize type;
+- primary key;
+- foreign key;
+- allowNull;
+- unique;
+- defaultValue.
+
+Use:
+
+| Field | Sequelize type | PK | FK | allowNull | unique | defaultValue |
+
+Then document every actual association:
+
+- hasMany;
+- belongsTo;
+- hasOne;
+- belongsToMany.
+
+Include:
+
+- source model;
+- target model;
+- foreignKey;
+- alias.
+
+Do not infer relationships from names.
+
+==================================================
+PHASE 6 — BACKEND API
+==================================================
+
+Inspect:
+
+backend/src/app.js
+backend/src/routes/
+backend/src/middleware/
+
+Identify every actual endpoint.
+
+Create:
+
+| Method | Full path | Source file | Handler | Middleware | JWT | IP restriction | Role check | Purpose |
+
+For each endpoint document:
+
+Source:
+Authentication:
+Input:
+Processing:
+Success:
+Errors:
+
+Only include request fields and response fields visible in code.
+
+==================================================
+PHASE 7 — AUTHENTICATION AND AUTHORIZATION
+==================================================
+
+Document exactly:
+
+- mobile login flow;
+- credential verification;
+- password hashing;
+- JWT generation;
+- JWT verification;
+- token payload;
+- token expiration if visible;
+- token storage;
+- logout;
+- mobile session expiration;
+- roles;
+- superadmin behavior;
+- backend route protection;
+- IP whitelist behavior.
+
+Distinguish clearly:
+
+AUTHENTICATION
+
+from:
+
+AUTHORIZATION
+
+Do not call application entities "roles" unless code defines them as roles.
+
+==================================================
+PHASE 8 — BACKEND → MOBILE SYNCHRONIZATION
+==================================================
+
+Analyze this flow separately.
+
+Do NOT mix it with Envio/Fardo upload.
+
+Determine:
+
+Trigger
+→ mobile function
+→ HTTP request
+→ backend endpoint
+→ backend query
+→ response
+→ mobile processing
+→ SQLite writes
+
+Identify exactly:
+
+- trigger screen/function;
+- manual or automatic;
+- connectivity checks;
+- endpoint;
+- security;
+- entities transferred;
+- local tables;
+- SQLite operation;
+- identifiers used.
+
+Create:
+
+| Entity | Backend source | Local table | SQLite operation | Identifier |
+
+Specifically verify the synchronization of:
+
+Usuario
+Agricultor
+Transportista
+
+Do NOT assume Envio/Fardo are part of this direction.
+
+==================================================
+PHASE 9 — MOBILE → BACKEND SYNCHRONIZATION
+==================================================
+
+Analyze separately:
+
+Envio
+Fardo
+
+Reconstruct:
+
+Trigger
+→ pending SQLite query
+→ load Fardos
+→ payload construction
+→ HTTP POST
+→ authentication
+→ duplicate check
+→ transaction
+→ Envio creation
+→ Fardo creation
+→ response
+→ local synchronization-state update
+
+Determine exactly:
+
+- estado condition;
+- sincronizado condition;
+- id_local;
+- token used;
+- duplicate handling;
+- id_servidor;
+- transaction scope;
+- rollback behavior;
+- local success marking;
+- retry behavior.
+
+IMPORTANT:
+
+Do not claim automatic retry unless actual retry code exists.
+
+Distinguish:
+
+"can be attempted again on a later trigger"
+
+from:
+
+"automatic retry".
+
+==================================================
+PHASE 10 — id_local
+==================================================
+
+Document specifically:
+
+- where generated;
+- generation function;
+- local UNIQUE constraint;
+- where stored;
+- where sent;
+- backend UNIQUE behavior;
+- duplicate lookup;
+- duplicate response;
+- what mobile does after duplicate response.
+
+==================================================
+PHASE 11 — ENVIO LIFECYCLE
+==================================================
+
+Reconstruct the real local lifecycle from code.
+
+For example:
+
+created
+→ open
+→ scanning
+→ closed
+→ pending synchronization
+→ synchronized
+
+But use only states actually represented by code.
+
+Identify:
+
+- state fields;
+- functions that transition state;
+- SQLite updates;
+- sync-related fields.
+
+==================================================
+PHASE 12 — FARDO WORKFLOW
+==================================================
+
+Document:
+
+- QR capture;
+- QR validation;
+- duplicate checking;
+- valid/invalid state;
+- motivo_invalido;
+- timestamp;
+- relationship with Envio;
+- storage;
+- synchronization.
+
+Trace the real functions and source files.
+
+==================================================
+PHASE 13 — COMPLETE BUSINESS FLOW
+==================================================
+
+Reconstruct the actual operational flow from the application.
+
+Start from login and continue through the main user workflow.
+
+Use a textual diagram with real screen/function names.
+
+For example:
+
+Login
+↓
+...
+↓
+Agricultor selection
+↓
+...
+↓
+Transport
+↓
+...
+↓
+QR scan
+↓
+...
+↓
+Envio closure
+↓
+...
+↓
+PDF
+↓
+...
+↓
+Synchronization
+
+Do not assume this exact order.
+
+Derive it from code.
+
+==================================================
+PHASE 14 — ERROR HANDLING
+==================================================
+
+Document explicit handling for:
+
+- SQLite errors;
+- API errors;
+- missing network;
+- HTTP 4xx;
+- HTTP 5xx;
+- JWT failure;
+- IP restriction;
+- backend DB failure;
+- transaction rollback;
+- duplicate id_local;
+- synchronization failure.
+
+Use:
+
+SUPPORTED
+PARTIALLY HANDLED
+NOT HANDLED
+NOT DETERMINED
+
+Do not exaggerate error handling.
+
+==================================================
+PHASE 15 — CONFIGURATION
+==================================================
+
+Find references to:
+
+process.env
+dotenv
+EXPO_PUBLIC_
+configuration files
+
+Create:
+
+| Variable | Source file | Component | Purpose | Sensitive |
+
+Do NOT print secret values.
+
+==================================================
+PHASE 16 — EXECUTION / DEPLOYMENT
+==================================================
+
+Inspect package.json and deployment files.
+
+Document actual commands for:
+
+- installing mobile dependencies;
+- starting Expo;
+- installing backend dependencies;
+- backend development;
+- backend production;
+- migrations;
+- seeds;
+- PM2 if present;
+- Android build configuration if relevant.
+
+Do not invent commands.
+
+==================================================
+PHASE 17 — TESTS
+==================================================
+
+Search application source for:
+
+*.test.*
+*.spec.*
+jest
+mocha
+vitest
+node:test
+
+Do NOT search node_modules.
+
+If there are no automated tests, explicitly write:
+
+NO AUTOMATED TESTS FOUND
+
+==================================================
+PHASE 18 — DEPENDENCY MAP
+==================================================
+
+Build textual dependency maps for important flows.
+
+Example:
+
+Pantalla
+→ service
+→ SQLite function
+→ API function
+→ route
+→ middleware
+→ Sequelize model
+→ MySQL
+
+Create maps for:
+
+- authentication;
+- initial/reference synchronization;
+- Envio/Fardo synchronization;
+- QR workflow;
+- history/reporting.
+
+==================================================
+PHASE 19 — HIGH-RISK COMPONENTS
+==================================================
+
+Identify components where future changes could break existing behavior.
+
+Create:
+
+| File / Function | Risk | Why sensitive | Depends on it |
+
+Classify risk:
+
+HIGH
+MEDIUM
+LOW
+
+Base risk on actual dependencies.
+
+Do not propose changes yet.
+
+==================================================
+PHASE 20 — READ-ONLY EXTENSION POINTS
+==================================================
+
+Identify existing functions/components that:
+
+- only read data;
+- have no synchronization side effects;
+- do not change Envio lifecycle;
+- do not modify authentication;
+- do not alter reference data.
+
+These may be useful in future work.
+
+Do NOT design new panels.
+
+Only identify extension points.
+
+==================================================
+FINAL DOCUMENT
+==================================================
+
+Create or update ONLY:
+
+docs/AI_SYSTEM_ANALYSIS.md
+
+The document must contain:
+
+# 1. System Overview
+# 2. Repository Structure
+# 3. Architecture
+# 4. Technology Stack
+# 5. Mobile Application
+# 6. Navigation and Screens
+# 7. SQLite Database
+# 8. SQLite Data Access Functions
+# 9. Sequelize / MySQL Model
+# 10. Backend API
+# 11. Authentication and Authorization
+# 12. Backend → Mobile Synchronization
+# 13. Mobile → Backend Synchronization
+# 14. id_local and Duplicate Prevention
+# 15. Envio Lifecycle
+# 16. Fardo / QR Workflow
+# 17. End-to-End Business Flow
+# 18. Configuration
+# 19. Error Handling
+# 20. Tests
+# 21. Execution and Deployment
+# 22. Dependency Map
+# 23. High-Risk Components
+# 24. Read-Only Extension Points
+# 25. Not Determined
+# 26. Evidence Files
+# 27. Summary for Future Development
+
+==================================================
+IMPORTANT QUALITY CHECK
+==================================================
+
+Before finalizing, re-check the document against the source code.
+
+Specifically verify that you have NOT invented:
+
+- Usuario.correo
+- Agricultor.usuario_id
+- Fardo.peso
+
+These are examples of fields that must only appear if actually present in code.
+
+Also verify independently from route code:
+
+- whether GET /api/sync uses JWT;
+- whether GET /api/sync uses IP restriction;
+- whether POST /api/envios/sync uses JWT;
+- whether POST /api/envios/sync uses IP restriction.
+
+Do not assume security behavior from endpoint purpose.
+
+==================================================
+FILE SAFETY
+==================================================
+
+The ONLY permitted repository change is:
+
+docs/AI_SYSTEM_ANALYSIS.md
+
+Before finishing, inspect repository changes and confirm that no application
+source file was modified.
+
+Do not commit.
+Do not push.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Stop only when the complete analysis is documented.
+
+Do NOT implement anything.
+Do NOT propose new panels.
+Do NOT change application behavior.
+
+At the end report briefly:
+
+1. whether the analysis is complete;
+2. which areas remain NOT DETERMINED;
+3. which files were modified;
+4. whether any Compaction occurred during the task.
