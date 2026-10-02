@@ -255,6 +255,24 @@ Incrementar en `app/app.json`:
 > **Los valores se embeben en tiempo de compilación.**
 > Si cambiás alguno, hay que recompilar el APK.
 
+## Panel de Administración
+
+El panel de administración está disponible en la ruta `/admin` del backend.
+
+### Acceso
+- URL: `http://192.168.4.202:3000/admin`
+- Credenciales: usuario `admin` y contraseña `Admin2026!`
+- Funcionalidades:
+  - Gestión de usuarios (listado, alta, modificación, baja)
+  - Gestión de transportistas (listado, alta, modificación, baja)
+  - Autenticación con sesiones server-side (15 minutos de expiración)
+  - Validación de referencias antes de eliminación
+  - Compatibilidad con la aplicación móvil existente
+
+### Requisitos adicionales
+- Instalar dependencia: `npm install express-session`
+- Configurar variable de entorno: `SESSION_SECRET` (clave de sesión segura)
+
 > **Verificar:** si el proyecto centraliza la configuración en `app/config.js`
 > (solución aplicada cuando las variables no se embebían correctamente),
 > ese archivo es la fuente de verdad y este `.env` puede estar obsoleto.
@@ -556,9 +574,14 @@ tabacalera-app/
         ├── routes/
         │   ├── sync.js           # GET /api/sync
         │   └── envios.js         # /api/envios/*
-        └── middleware/
-            ├── auth.js           # JWT verificación y generación
-            └── ipWhitelist.js    # Filtrado por IP de red interna
+        ├── middleware/
+        │   ├── auth.js           # JWT verificación y generación
+        │   └── ipWhitelist.js    # Filtrado por IP de red interna
+        └── admin/                # Panel de administración
+            ├── login.html        # Página de login
+            ├── index.html        # Panel principal
+            ├── css/              # Estilos CSS
+            └── js/               # JavaScript
 ```
 
 > **Verificar:** confirmar que `PantallaHistorial.js` y `Transportista.js`
@@ -574,6 +597,8 @@ tabacalera-app/
 - Los envíos al servidor requieren token JWT obtenido en la sync inicial.
 - Si un usuario es desactivado en el servidor, queda bloqueado en la próxima sync.
 - El keystore de firma **no debe versionarse**: agregar `*.keystore` al `.gitignore`.
+- El panel de administración utiliza sesiones server-side con cookies seguras (httpOnly, SameSite=strict).
+- La sesión de administración expira después de 15 minutos de inactividad.
 
 ---
 
@@ -591,6 +616,14 @@ Logo: reemplazar `app/assets/logo.png`
 - Formato: PNG
 - Tamaño recomendado: **512×512 px** (mínimo 256×256)
 
+## Panel de Administración
+
+El panel de administración se encuentra disponible en `/admin` y permite:
+- Gestión completa de usuarios y transportistas
+- Validación de referencias antes de eliminar registros
+- Sesiones con expiración de 15 minutos de inactividad
+- Acceso desde navegadores de escritorio o móvil
+
 ---
 # Licencia
 
@@ -603,3 +636,59 @@ operaciones internas. Queda prohibida la redistribución, copia o
 reutilización del software sin autorización expresa del autor.
 
 © 2026 Juan De León — Todos los derechos reservados.
+
+# Panel de Administración
+
+## Funcionalidades principales
+
+- **Autenticación**: Inicio de sesión con credenciales admin
+- **Gestión de usuarios**: Listado, alta, modificación y baja
+- **Gestión de transportistas**: Listado, alta, modificación y baja
+- **Validación de referencias**: Impedir eliminación de registros con dependencias
+- **Sesiones seguras**: Server-side con expiración de 15 minutos
+- **Compatibilidad**: No afecta la funcionalidad de la aplicación móvil
+- **Seguridad**: Uso del mismo esquema de hasheo de contraseñas que la app móvil
+
+## Acceso al panel
+
+1. Acceder a: `http://192.168.4.202:3000/admin`
+2. Iniciar sesión con:
+   - Usuario: `admin`
+   - Contraseña: `Admin2026!`
+3. Utilizar las funcionalidades desde el menú principal
+
+## Requisitos técnicos
+
+### Backend
+
+```bash
+# Instalar dependencia adicional
+npm install express-session
+
+# Configurar variable de entorno
+SESSION_SECRET=una_clave_secreta_larga_y_aleatoria
+```
+
+### Despliegue
+
+```bash
+cd ~/node_app/tabacalera-app
+git pull origin main
+cd backend
+npm install
+pm2 restart tabacalera-backend
+```
+
+## Arquitectura del panel
+
+### Backend
+- Rutas API: `/api/admin/*` 
+- Sesiones server-side con express-session
+- Validación de referencias antes de eliminación
+- Compatibilidad con la misma base de datos que la app móvil
+
+### Frontend
+- Archivos HTML/CSS/JS estáticos en `frontend/src/admin/*`
+- Diseño responsive
+- Manejo de errores y validaciones
+- Autenticación basada en sesiones
