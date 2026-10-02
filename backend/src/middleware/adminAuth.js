@@ -1,10 +1,9 @@
 const express = require('express');
 const session = require('express-session');
-const { CONFIG } = require('../../app/src/config/config');
 
 // Configuración de sesión para admin
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'tabacalera_admin_secret_2026',
+  secret: process.env.SESSION_SECRET,
   name: 'tabacalera_admin_sid',
   resave: false,
   saveUninitialized: false,
@@ -25,7 +24,7 @@ function adminAuth(req, res, next) {
   }
   
   // Redirigir al login si no hay sesión válida
-  if (req.path.startsWith('/api/admin')) {
+  if (req.originalUrl.startsWith('/api/admin')) {
     return res.status(401).json({ error: 'Acceso no autorizado' });
   } else {
     return res.redirect('/admin/login');

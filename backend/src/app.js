@@ -1,3 +1,4 @@
+const path = require('path');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -35,7 +36,11 @@ app.use('/api/envios', routeEnvios);
 app.use(routeAdmin);
 
 // Servir archivos estáticos del panel de administración
-app.use('/admin', express.static('frontend/src/admin'));
+const adminFrontendPath = path.join(__dirname, '../../frontend/src/admin');
+
+app.use('/admin', express.static(adminFrontendPath, {
+  extensions: ['html']
+}));
 
 // Salud del servidor
 app.get('/api/health', (req, res) => {
