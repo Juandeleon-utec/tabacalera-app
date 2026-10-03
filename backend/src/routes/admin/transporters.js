@@ -107,6 +107,32 @@ router.put('/transporters/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/transporters/:id
+ * Obtener un transportista por ID
+ */
+router.get('/transporters/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const transportista = await Transportista.findByPk(id, {
+      attributes: ['id', 'empresa', 'nombre_chofer', 'documento', 'matricula', 'activo', 'created_at']
+    });
+    
+    if (!transportista) {
+      return res.status(404).json({ error: 'Transportista no encontrado' });
+    }
+    
+    res.json({ 
+      ok: true, 
+      transportista: transportista.toJSON() 
+    });
+  } catch (error) {
+    console.error('Error al obtener transportista:', error);
+    res.status(500).json({ error: 'Error al obtener transportista' });
+  }
+});
+
+/**
  * DELETE /api/admin/transporters/:id
  * Eliminar transportista (con validación de referencias)
  */

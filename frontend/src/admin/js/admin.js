@@ -113,9 +113,10 @@ function mostrarUsuarios(data) {
     const contenido = document.getElementById('contenido-principal');
     let html = `
         <h2>Gestión de Usuarios</h2>
-        <div class="form-container">
-            <h3>Agregar Nuevo Usuario</h3>
+        <div class="form-container" id="formUsuarioContainer">
+            <h3 id="usuarioFormTitle">Agregar Nuevo Usuario</h3>
             <form id="formUsuario">
+                <input type="hidden" id="usuarioId">
                 <div class="form-group">
                     <label for="nombre">Nombre:</label>
                     <input type="text" id="nombre" required>
@@ -140,7 +141,10 @@ function mostrarUsuarios(data) {
                         <input type="checkbox" id="activo" checked> Activo
                     </label>
                 </div>
-                <button type="button" onclick="guardarUsuario()" class="btn btn-primary">Guardar Usuario</button>
+                <div class="form-actions">
+                    <button type="button" onclick="guardarUsuario()" class="btn btn-primary">Guardar Usuario</button>
+                    <button type="button" onclick="cancelarEdicion()" class="btn btn-secondary">Cancelar</button>
+                </div>
             </form>
         </div>
         <div class="table-container">
@@ -184,6 +188,7 @@ function mostrarUsuarios(data) {
 }
 
 async function guardarUsuario() {
+    const id = document.getElementById('usuarioId').value;
     const nombre = document.getElementById('nombre').value;
     const usuario = document.getElementById('usuario').value;
     const password = document.getElementById('password').value;
@@ -191,13 +196,30 @@ async function guardarUsuario() {
     const activo = document.getElementById('activo').checked;
     
     try {
-        const response = await fetch('/api/admin/users', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ nombre, usuario, password, rol, activo })
-        });
+        let response;
+        let url;
+        
+        if (id) {
+            // Actualizar usuario existente
+            url = `/api/admin/users/${id}`;
+            response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre, usuario, password, rol, activo })
+            });
+        } else {
+            // Crear nuevo usuario
+            url = '/api/admin/users';
+            response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre, usuario, password, rol, activo })
+            });
+        }
         
         const data = await response.json();
         
@@ -214,8 +236,65 @@ async function guardarUsuario() {
 }
 
 async function editarUsuario(id) {
-    // Implementación futura
-    alert('Funcionalidad de edición pendiente');
+    try {
+        const response = await fetch(`/api/admin/users/${id}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar usuario');
+        }
+        
+        const data = await response.json();
+        const usuario = data.usuario;
+        
+        // Mostrar formulario de edición
+        document.getElementById('usuarioId').value = usuario.id;
+        document.getElementById('nombre').value = usuario.nombre;
+        document.getElementById('usuario').value = usuario.usuario;
+        document.getElementById('password').value = '';
+        document.getElementById('rol').value = usuario.rol;
+        document.getElementById('activo').checked = usuario.activo;
+        document.getElementById('usuarioFormTitle').textContent = 'Editar Usuario';
+        
+        // Mostrar formulario y ocultar tabla
+        document.getElementById('formUsuarioContainer').style.display = 'block';
+        document.querySelector('.table-container').style.display = 'none';
+    } catch (error) {
+        console.error('Error cargando usuario para edición:', error);
+        alert('Error al cargar usuario para edición');
+    }
+}
+
+function cancelarEdicion() {
+    // Limpiar formulario y volver a mostrar tabla
+    document.getElementById('usuarioId').value = '';
+    document.getElementById('nombre').value = '';
+    document.getElementById('usuario').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('rol').value = 'comprador';
+    document.getElementById('activo').checked = true;
+    document.getElementById('usuarioFormTitle').textContent = 'Agregar Nuevo Usuario';
+    
+    // Mostrar tabla y ocultar formulario
+    document.getElementById('formUsuarioContainer').style.display = 'none';
+    document.querySelector('.table-container').style.display = 'block';
+}
+
+function cancelarEdicionTransportista() {
+    // Limpiar formulario y volver a mostrar tabla
+    document.getElementById('transportistaId').value = '';
+    document.getElementById('empresa').value = '';
+    document.getElementById('nombre_chofer').value = '';
+    document.getElementById('documento').value = '';
+    document.getElementById('matricula').value = '';
+    document.getElementById('activoTransportista').checked = true;
+    document.getElementById('transportistaFormTitle').textContent = 'Agregar Nuevo Transportista';
+    
+    // Mostrar tabla y ocultar formulario
+    document.getElementById('formTransportistaContainer').style.display = 'none';
+    document.querySelector('.table-container').style.display = 'block';
 }
 
 async function eliminarUsuario(id) {
@@ -268,9 +347,10 @@ function mostrarTransportistas(data) {
     const contenido = document.getElementById('contenido-principal');
     let html = `
         <h2>Gestión de Transportistas</h2>
-        <div class="form-container">
-            <h3>Agregar Nuevo Transportista</h3>
+        <div class="form-container" id="formTransportistaContainer">
+            <h3 id="transportistaFormTitle">Agregar Nuevo Transportista</h3>
             <form id="formTransportista">
+                <input type="hidden" id="transportistaId">
                 <div class="form-group">
                     <label for="empresa">Empresa:</label>
                     <input type="text" id="empresa" required>
@@ -292,7 +372,10 @@ function mostrarTransportistas(data) {
                         <input type="checkbox" id="activoTransportista" checked> Activo
                     </label>
                 </div>
-                <button type="button" onclick="guardarTransportista()" class="btn btn-primary">Guardar Transportista</button>
+                <div class="form-actions">
+                    <button type="button" onclick="guardarTransportista()" class="btn btn-primary">Guardar Transportista</button>
+                    <button type="button" onclick="cancelarEdicionTransportista()" class="btn btn-secondary">Cancelar</button>
+                </div>
             </form>
         </div>
         <div class="table-container">
@@ -336,6 +419,7 @@ function mostrarTransportistas(data) {
 }
 
 async function guardarTransportista() {
+    const id = document.getElementById('transportistaId').value;
     const empresa = document.getElementById('empresa').value;
     const nombre_chofer = document.getElementById('nombre_chofer').value;
     const documento = document.getElementById('documento').value;
@@ -343,13 +427,30 @@ async function guardarTransportista() {
     const activo = document.getElementById('activoTransportista').checked;
     
     try {
-        const response = await fetch('/api/admin/transporters', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ empresa, nombre_chofer, documento, matricula, activo })
-        });
+        let response;
+        let url;
+        
+        if (id) {
+            // Actualizar transportista existente
+            url = `/api/admin/transporters/${id}`;
+            response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ empresa, nombre_chofer, documento, matricula, activo })
+            });
+        } else {
+            // Crear nuevo transportista
+            url = '/api/admin/transporters';
+            response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ empresa, nombre_chofer, documento, matricula, activo })
+            });
+        }
         
         const data = await response.json();
         
@@ -366,8 +467,46 @@ async function guardarTransportista() {
 }
 
 async function editarTransportista(id) {
-    // Implementación futura
-    alert('Funcionalidad de edición pendiente');
+    try {
+        const response = await fetch(`/api/admin/transporters/${id}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar transportista');
+        }
+        
+        const data = await response.json();
+        const transportista = data.transportista;
+        
+        // Mostrar formulario de edición
+        document.getElementById('transportistaId').value = transportista.id;
+        document.getElementById('empresa').value = transportista.empresa;
+        document.getElementById('nombre_chofer').value = transportista.nombre_chofer;
+        document.getElementById('documento').value = transportista.documento || '';
+        document.getElementById('matricula').value = transportista.matricula;
+        document.getElementById('activoTransportista').checked = transportista.activo;
+        document.getElementById('transportistaFormTitle').textContent = 'Editar Transportista';
+        
+        // Mostrar formulario y ocultar tabla
+        document.getElementById('formTransportistaContainer').style.display = 'block';
+        document.querySelector('.table-container').style.display = 'none';
+    } catch (error) {
+        console.error('Error cargando transportista para edición:', error);
+        alert('Error al cargar transportista para edición');
+    }
+}
+
+function cancelarEdicionTransportista() {
+    // Limpiar formulario y volver a mostrar tabla
+    document.getElementById('transportistaId').value = '';
+    document.getElementById('empresa').value = '';
+    document.getElementById('nombre_chofer').value = '';
+    document.getElementById('documento').value = '';
+    document.getElementById('matricula').value = '';
+    document.getElementById('activoTransportista').checked = true;
+    document.getElementById('transportistaFormTitle').textContent = 'Agregar Nuevo Transportista';
 }
 
 async function eliminarTransportista(id) {
