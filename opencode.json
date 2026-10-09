@@ -1,30 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
-  "model": "local/qwen3-coder-q4",
-
-  "agent": {
-    "build": {
-      "temperature": 0.1
-    },
-    "plan": {
-      "temperature": 0.1
-    }
-  },
-
+  "model": "local/qwen3-coder",
   "provider": {
     "local": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "LocalAI-Lab",
+      "name": "Qwen3-Coder Local",
       "options": {
         "baseURL": "http://192.168.2.237:8080/v1",
         "apiKey": "localai-dev-key"
       },
       "models": {
-        "qwen3-coder-q4": {
-          "name": "Qwen3-Coder-30B-A3B Q4_K_M",
+        "qwen3-coder": {
+          "name": "Qwen3-Coder 30B Q3",
           "limit": {
-            "context": 49152,
+            "context": 114688,
             "output": 8192
           }
         }
