@@ -3,8 +3,9 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Modal, FlatList, Alert, ScrollView, ActivityIndicator,
 } from 'react-native';
-import { listarTransportistas, crearEnvio } from '../services/baseDeDatos';
+import { listarTransportistas, listarColoresEtiqueta, crearEnvio } from '../services/baseDeDatos';
 import { generarIdLocal } from '../utils/uuid';
+import MuestraColor from '../components/MuestraColor';
 import COLORES from '../constants/colores';
 
 export default function PantallaTransporte({ navigation, route }) {
@@ -19,6 +20,9 @@ export default function PantallaTransporte({ navigation, route }) {
   const [observaciones, setObservaciones] = useState('');
   const [modalEmpresa, setModalEmpresa] = useState(false);
   const [modalChofer, setModalChofer] = useState(false);
+  const [coloresEtiqueta, setColoresEtiqueta] = useState([]);
+  const [colorSeleccionado, setColorSeleccionado] = useState(null);
+  const [modalColor, setModalColor] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [iniciando, setIniciando] = useState(false);
 
@@ -28,12 +32,13 @@ export default function PantallaTransporte({ navigation, route }) {
 
   async function cargarTransportistas() {
     try {
-      const lista = await listarTransportistas();
+      const [lista, colores] = await Promise.all([listarTransportistas(), listarColoresEtiqueta()]);
       setTransportistas(lista);
       const uniqueEmpresas = [...new Set(lista.map((t) => t.empresa))].sort();
       setEmpresas(uniqueEmpresas);
+      setColoresEtiqueta(colores);
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron cargar los transportistas');
+      Alert.alert('Error', 'No se pudieron cargar los transportistas o colores de etiqueta');
     } finally {
       setCargando(false);
     }
@@ -54,8 +59,13 @@ export default function PantallaTransporte({ navigation, route }) {
     setModalChofer(false);
   }
 
+  function seleccionarColor(color) {
+    setColorSeleccionado(color);
+    setModalColor(false);
+  }
+
   async function comenzarEscaneo() {
-    if (!empresaSeleccionada || !transportistaSeleccionado) return;
+    if (!empresaSeleccionada || !transportistaSeleccionado || !colorSeleccionado) return;
 
     setIniciando(true);
     try {
@@ -73,6 +83,9 @@ export default function PantallaTransporte({ navigation, route }) {
         transportista_id: transportistaSeleccionado.id,
         documento_chofer_real: documentoChofer.trim() || null,
         observaciones: observaciones.trim() || null,
+        color_etiqueta_id: colorSeleccionado.id,
+        color_etiqueta_nombre: colorSeleccionado.nombre,
+        color_etiqueta_hex: colorSeleccionado.hex,
         fecha,
         hora,
         gps_lat: gps?.lat || null,
@@ -86,6 +99,7 @@ export default function PantallaTransporte({ navigation, route }) {
         transportista: transportistaSeleccionado,
         documentoChoferReal: documentoChofer.trim() || null,
         observaciones: observaciones.trim() || null,
+        colorEtiqueta: colorSeleccionado,
         sesion,
         fecha,
         hora,
@@ -99,7 +113,7 @@ export default function PantallaTransporte({ navigation, route }) {
     }
   }
 
-  const puedeComenzar = !!empresaSeleccionada && !!transportistaSeleccionado;
+  const puedeComenzar = !!empresaSeleccionada && !!transportistaSeleccionado && !!colorSeleccionado;
 
   if (cargando) {
     return (
@@ -195,6 +209,32 @@ export default function PantallaTransporte({ navigation, route }) {
         </>
       )}
 
+      <Text style={[estilos.seccionTitulo, estilos.seccionTituloSiguiente]}>COLOR DE ETIQUETA</Text>
+
+      {coloresEtiqueta.length === 0 ? (
+        <View style={estilos.aviso}>
+          <Text style={estilos.avisoTexto}>
+            No hay colores de etiqueta cargados.{'\n'}Realice una sincronización desde el panel administrador.
+          </Text>
+        </View>
+      ) : (
+        <>
+          <Text style={estilos.label}>Color de etiqueta *</Text>
+          <TouchableOpacity
+            style={[estilos.selector, colorSeleccionado && estilos.selectorActivo]}
+            onPress={() => setModalColor(true)}
+          >
+            {colorSeleccionado && (
+              <MuestraColor hex={colorSeleccionado.hex} style={estilos.muestraColor} />
+            )}
+            <Text style={colorSeleccionado ? estilos.selectorTexto : estilos.selectorPlaceholder}>
+              {colorSeleccionado?.nombre || 'Seleccione un color...'}
+            </Text>
+            <Text style={estilos.chevron}>›</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
       {/* Botón comenzar */}
       <TouchableOpacity
         style={[estilos.botonComenzar, !puedeComenzar && estilos.botonDeshabilitado]}
@@ -230,6 +270,37 @@ export default function PantallaTransporte({ navigation, route }) {
                     {item}
                   </Text>
                   {empresaSeleccionada === item && <Text style={estilos.checkmark}>✓</Text>}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={estilos.separador} />}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal color de etiqueta */}
+      <Modal visible={modalColor} transparent animationType="slide" onRequestClose={() => setModalColor(false)}>
+        <View style={estilos.modalFondo}>
+          <View style={estilos.modalCaja}>
+            <View style={estilos.modalCabecera}>
+              <Text style={estilos.modalTitulo}>Seleccione color de etiqueta</Text>
+              <TouchableOpacity onPress={() => setModalColor(false)}>
+                <Text style={estilos.modalCerrar}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={coloresEtiqueta}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[estilos.opcion, colorSeleccionado?.id === item.id && estilos.opcionActiva]}
+                  onPress={() => seleccionarColor(item)}
+                >
+                  <MuestraColor hex={item.hex} tamaño={24} style={estilos.muestraColor} />
+                  <Text style={[estilos.opcionTexto, colorSeleccionado?.id === item.id && estilos.opcionTextoActivo]}>
+                    {item.nombre}
+                  </Text>
+                  {colorSeleccionado?.id === item.id && <Text style={estilos.checkmark}>✓</Text>}
                 </TouchableOpacity>
               )}
               ItemSeparatorComponent={() => <View style={estilos.separador} />}
@@ -295,6 +366,8 @@ const estilos = StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: COLORES.textoClaro,
     letterSpacing: 0.8, marginBottom: 16,
   },
+  seccionTituloSiguiente: { marginTop: 28 },
+  muestraColor: { marginRight: 10 },
 
   aviso: {
     backgroundColor: COLORES.fondoAlerta, borderRadius: 8,

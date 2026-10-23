@@ -79,6 +79,7 @@ export default function PantallaAdmin({ navigation }) {
           <Text style={estilos.tituloExito}>✓ Sincronización exitosa</Text>
           <Text style={estilos.dato}>Usuarios descargados: {resultadoSync.usuarios}</Text>
           <Text style={estilos.dato}>Agricultores descargados: {resultadoSync.agricultores}</Text>
+          <Text style={estilos.dato}>Colores de etiqueta descargados: {resultadoSync.colores_etiqueta}</Text>
           <Text style={estilos.dato}>
             Realizada: {new Date(resultadoSync.sync_at).toLocaleString('es-UY')}
           </Text>

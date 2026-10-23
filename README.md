@@ -16,7 +16,7 @@ Sistema completo para registrar la compra de fardos de tabaco en campo, compuest
 ```
 
 La app funciona **100% offline**. Solo necesita WiFi interno para:
-1. Sincronización inicial (descargar usuarios, agricultores y transportistas)
+1. Sincronización inicial (descargar usuarios, agricultores, transportistas y colores de etiqueta)
 2. Envío de remitos cerrados al servidor
 
 El comprobante de la transacción es un **PDF** generado en el dispositivo y
@@ -301,6 +301,11 @@ Incrementar en `app/app.json`:
 | 1.0.3 | 4 | — | Correcciones historial + actualización transportistas |
 | 1.0.4 | 5 | — | Mejoras escáner QR |
 | 1.0.5 | 6 | 08/2026 | Build local con Gradle (se descontinúa EAS) |
+| 1.3.0 | 7 | 10/2026 | Color de etiqueta en la compra (selector, PDF, ticket) |
+
+> El build local de Gradle quedó con `versionName 1.2.1` / `versionCode 2`, que no
+> coincide con esta tabla. En 1.3.0 se usa `versionCode 7` para superar cualquier
+> APK instalado (2 o 6). Android rechaza actualizar si el versionCode no es mayor.
 
 ---
 
@@ -359,7 +364,7 @@ de producción, por lo que `app.json` debe mantener:
 1. El dispositivo debe estar en la **red WiFi interna** de la empresa.
 2. Ingresar con usuario `admin` y la contraseña configurada.
 3. Presionar **"Sincronizar todo"**.
-4. La app descarga usuarios, agricultores y transportistas desde el servidor.
+4. La app descarga usuarios, agricultores, transportistas y colores de etiqueta desde el servidor.
 5. Cerrar sesión admin. Los compradores de campo ya pueden ingresar.
 
 ### Uso diario (compradores de campo)
@@ -368,11 +373,32 @@ de producción, por lo que `app.json` debe mantener:
 2. Seleccionar el agricultor de la lista.
 3. Seleccionar empresa transportista y chofer.
 4. Completar datos opcionales (documento, observaciones).
-5. Escanear los fardos con la cámara del celular.
-6. Al terminar, presionar **"Cerrar envío"**.
-7. El PDF se guarda automáticamente en `/Downloads/Montepaz/`.
-8. Compartir el PDF por WhatsApp.
-9. Al volver a la red WiFi de planta, sincronizar los envíos pendientes.
+5. Seleccionar el **color de etiqueta** (obligatorio: sin color no se habilita
+   "Comenzar escaneo"). El color elegido se muestra en la pantalla del escáner.
+6. Escanear los fardos con la cámara del celular.
+7. Al terminar, presionar **"Cerrar envío"**.
+8. El PDF se guarda automáticamente en `/Downloads/Montepaz/`.
+9. Compartir el PDF por WhatsApp.
+10. Al volver a la red WiFi de planta, sincronizar los envíos pendientes.
+
+> Los colores de etiqueta se descargan junto con los agricultores en la
+> **sincronización inicial** del superadmin ("Sincronizar todo"). El botón
+> "Actualizar transportistas" no los actualiza. Si el catálogo local está
+> vacío, la pantalla de transporte muestra el aviso para sincronizar.
+
+### Migración de la base local (SQLite)
+
+Al iniciar, la app ejecuta `inicializarBaseDeDatos()`: crea las tablas que
+falten (`CREATE TABLE IF NOT EXISTS`) y aplica una lista de
+`ALTER TABLE ... ADD COLUMN` idempotentes (si la columna ya existe, el error
+se ignora). En 1.3.0 se agregan:
+
+- Tabla `colores_etiqueta (id, nombre, hex, activo)`.
+- Columnas `color_etiqueta_id`, `color_etiqueta_nombre`, `color_etiqueta_hex`
+  en `envios`. Las compras anteriores quedan con esos campos en `NULL`, y sus PDFs
+  se generan sin el bloque de color.
+
+Actualizar el APK sobre una instalación existente no borra datos.
 
 ### Formato del código QR
 
@@ -611,7 +637,8 @@ tabacalera-app/
 │   │   ├── PantallaEnvio.js      # Resumen + cerrar + PDF
 │   │   └── PantallaHistorial.js  # Historial de envíos por fecha
 │   ├── components/
-│   │   └── ItemFardo.js          # Fila de la lista de fardos
+│   │   ├── ItemFardo.js          # Fila de la lista de fardos
+│   │   └── MuestraColor.js       # Cuadrado de color de etiqueta
 │   ├── services/
 │   │   ├── baseDeDatos.js        # SQLite: todas las operaciones
 │   │   ├── autenticacion.js      # Login, sesión, vencimiento

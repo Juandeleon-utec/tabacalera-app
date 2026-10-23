@@ -44,6 +44,13 @@ export async function inicializarBaseDeDatos() {
       activo INTEGER DEFAULT 1
     );
 
+    CREATE TABLE IF NOT EXISTS colores_etiqueta (
+      id INTEGER PRIMARY KEY,
+      nombre TEXT NOT NULL,
+      hex TEXT NOT NULL,
+      activo INTEGER DEFAULT 1
+    );
+
     CREATE TABLE IF NOT EXISTS envios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_local TEXT UNIQUE NOT NULL,
@@ -54,6 +61,9 @@ export async function inicializarBaseDeDatos() {
       transportista_id INTEGER,
       documento_chofer_real TEXT,
       observaciones TEXT,
+      color_etiqueta_id INTEGER,
+      color_etiqueta_nombre TEXT,
+      color_etiqueta_hex TEXT,
       fecha TEXT NOT NULL,
       hora TEXT NOT NULL,
       gps_lat REAL,
@@ -92,6 +102,10 @@ export async function inicializarBaseDeDatos() {
     'ALTER TABLE envios ADD COLUMN transportista_id INTEGER',
     'ALTER TABLE envios ADD COLUMN documento_chofer_real TEXT',
     'ALTER TABLE envios ADD COLUMN observaciones TEXT',
+    // v1.3.0 — color de etiqueta (id + snapshot de nombre/hex)
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_id INTEGER',
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_nombre TEXT',
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_hex TEXT',
   ];
   for (const sql of migraciones) {
     try {
@@ -148,6 +162,29 @@ export async function obtenerTransportistaPorId(id) {
   return await baseDatos.getFirstAsync('SELECT * FROM transportistas WHERE id = ?', [id]);
 }
 
+// ─── Colores de etiqueta ──────────────────────────────────────────────────────
+
+// El servidor solo envía los activos: se desactivan todos y se reactivan los
+// recibidos, así un color dado de baja en el panel deja de aparecer sin borrarlo.
+export async function guardarColoresEtiqueta(colores) {
+  const baseDatos = obtenerDB();
+  await baseDatos.runAsync('UPDATE colores_etiqueta SET activo = 0');
+  for (const c of colores) {
+    await baseDatos.runAsync(
+      `INSERT OR REPLACE INTO colores_etiqueta (id, nombre, hex, activo)
+       VALUES (?, ?, ?, ?)`,
+      [c.id, c.nombre, c.hex, 1]
+    );
+  }
+}
+
+export async function listarColoresEtiqueta() {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getAllAsync(
+    'SELECT * FROM colores_etiqueta WHERE activo = 1 ORDER BY nombre ASC'
+  );
+}
+
 // ─── Agricultores ─────────────────────────────────────────────────────────────
 
 export async function guardarAgricultores(agricultores) {
@@ -185,8 +222,9 @@ export async function crearEnvio(datos) {
   const resultado = await baseDatos.runAsync(
     `INSERT INTO envios (id_local, usuario_id, agricultor_id, agricultor_codigo, agricultor_nombre,
       transportista_id, documento_chofer_real, observaciones,
+      color_etiqueta_id, color_etiqueta_nombre, color_etiqueta_hex,
       fecha, hora, gps_lat, gps_lng, estado, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierto', ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'abierto', ?)`,
     [
       datos.id_local,
       datos.usuario_id,
@@ -196,6 +234,9 @@ export async function crearEnvio(datos) {
       datos.transportista_id || null,
       datos.documento_chofer_real || null,
       datos.observaciones || null,
+      datos.color_etiqueta_id || null,
+      datos.color_etiqueta_nombre || null,
+      datos.color_etiqueta_hex || null,
       datos.fecha,
       datos.hora,
       datos.gps_lat || null,
