@@ -3,6 +3,7 @@ const router = express.Router();
 const { verificarToken } = require('../middleware/auth');
 const { Envio, Fardo, Usuario, Agricultor } = require('../models');
 const { sequelize } = require('../models');
+const { normalizarHex } = require('../models/ColorEtiqueta');
 
 /**
  * POST /api/envios/sync
@@ -28,6 +29,10 @@ router.post('/sync', verificarToken, async (req, res) => {
         transportista_id,
         documento_chofer_real,
         observaciones,
+        // Color de etiqueta: opcional, APKs anteriores a 1.3.0 no lo envían
+        color_etiqueta_id,
+        color_etiqueta_nombre,
+        color_etiqueta_hex,
         fecha,
         hora,
         gps_lat,
@@ -50,6 +55,9 @@ router.post('/sync', verificarToken, async (req, res) => {
           transportista_id: transportista_id || null,
           documento_chofer_real: documento_chofer_real || null,
           observaciones: observaciones || null,
+          color_etiqueta_id: color_etiqueta_id || null,
+          color_etiqueta_nombre: color_etiqueta_nombre || null,
+          color_etiqueta_hex: normalizarHex(color_etiqueta_hex),
           fecha,
           hora,
           gps_lat: gps_lat || null,

@@ -262,6 +262,30 @@ tr:hover {
     background-color: #c0392b;
 }
 
+/* Colores de etiqueta */
+.color-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.color-input-group input[type="color"] {
+    width: 56px;
+    height: 42px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.swatch-color {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #999;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
 /* Mensajes de éxito y error */
 .success-message {
     padding: 12px;

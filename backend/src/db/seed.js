@@ -1,6 +1,6 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const bcrypt = require('bcryptjs');
-const { sequelize, Usuario, Agricultor } = require('../models');
+const { sequelize, Usuario, Agricultor, ColorEtiqueta } = require('../models');
 
 async function seed() {
   try {
@@ -39,6 +39,25 @@ async function seed() {
         defaults: a,
       });
       console.log(`Agricultor ${a.codigo_6dig} - ${a.nombre}: ${creado ? 'creado' : 'ya existía'}`);
+    }
+
+    // Colores de etiqueta usados en planta
+    // TODO: confirmar nombres y valores hex con planta antes de correr en producción
+    const coloresEtiqueta = [
+      { nombre: 'Rojo', hex: '#E53935' },
+      { nombre: 'Verde', hex: '#43A047' },
+      { nombre: 'Azul', hex: '#1E88E5' },
+      { nombre: 'Amarillo', hex: '#FDD835' },
+      { nombre: 'Blanco', hex: '#FFFFFF' },
+      { nombre: 'Naranja', hex: '#FB8C00' },
+    ];
+
+    for (const c of coloresEtiqueta) {
+      const [color, creado] = await ColorEtiqueta.findOrCreate({
+        where: { nombre: c.nombre },
+        defaults: c,
+      });
+      console.log(`Color de etiqueta ${c.nombre} (${color.hex}): ${creado ? 'creado' : 'ya existía'}`);
     }
 
     console.log('\nSeed completado. Contraseña de prueba para todos los usuarios: campo123');
