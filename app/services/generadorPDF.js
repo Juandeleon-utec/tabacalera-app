@@ -53,6 +53,18 @@ export async function guardarPDFEnDispositivo(uriTemporal, envio) {
   return { ruta: destino, nombreArchivo, guardadoEnDescargasPublicas: false };
 }
 
+// Escapa texto para interpolarlo en el HTML del remito
+function escaparHtml(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const REGEX_HEX = /^#[0-9A-Fa-f]{6}$/;
+
 function estadoFardo(fardo) {
   if (fardo.valido === 1 || fardo.valido === true) return 'valido';
   if (fardo.motivo_invalido?.toLowerCase().includes('duplicado')) return 'duplicado';
@@ -75,7 +87,7 @@ function generarHtmlRemito(envio, fardos) {
       return `
         <tr style="background:${colorFila}">
           <td style="padding:5px 8px;text-align:center;color:#888">${i + 1}</td>
-          <td style="padding:5px 8px;font-family:monospace;font-size:12px;letter-spacing:1px">${f.codigo_qr}</td>
+          <td style="padding:5px 8px;font-family:monospace;font-size:12px;letter-spacing:1px">${escaparHtml(f.codigo_qr)}</td>
           <td style="padding:5px 8px;font-size:11px;color:${COLORES.valido};font-weight:600">✓ Válido</td>
         </tr>
       `;
@@ -91,11 +103,19 @@ function generarHtmlRemito(envio, fardos) {
   const seccionTransporte = t ? `
     <h2>Transporte</h2>
     <div class="grid">
-      <div class="dato"><b>Empresa:</b> ${t.empresa || ''}</div>
-      <div class="dato"><b>Chofer:</b> ${t.nombre_chofer || ''}</div>
-      <div class="dato"><b>Matrícula:</b> ${t.matricula || ''}</div>
-      ${envio.documento_chofer_real ? `<div class="dato"><b>Documento:</b> ${envio.documento_chofer_real}</div>` : ''}
-      ${envio.observaciones ? `<div class="dato" style="grid-column:span 2"><b>Observaciones:</b> ${envio.observaciones}</div>` : ''}
+      <div class="dato"><b>Empresa:</b> ${escaparHtml(t.empresa)}</div>
+      <div class="dato"><b>Chofer:</b> ${escaparHtml(t.nombre_chofer)}</div>
+      <div class="dato"><b>Matrícula:</b> ${escaparHtml(t.matricula)}</div>
+      ${envio.documento_chofer_real ? `<div class="dato"><b>Documento:</b> ${escaparHtml(envio.documento_chofer_real)}</div>` : ''}
+      ${envio.observaciones ? `<div class="dato" style="grid-column:span 2"><b>Observaciones:</b> ${escaparHtml(envio.observaciones)}</div>` : ''}
+    </div>
+  ` : '';
+
+  // Compras históricas (anteriores a 1.3.0) no tienen color: no se renderiza el bloque
+  const bloqueColorEtiqueta = envio.color_etiqueta_nombre && REGEX_HEX.test(envio.color_etiqueta_hex || '') ? `
+    <div class="dato color-etiqueta" style="grid-column:span 2">
+      <span class="swatch" style="background:${envio.color_etiqueta_hex}"></span>
+      <span><b>Color de etiqueta:</b> ${escaparHtml(envio.color_etiqueta_nombre)}</span>
     </div>
   ` : '';
 
@@ -121,6 +141,8 @@ function generarHtmlRemito(envio, fardos) {
         .firma{margin-top:44px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
         .firma div{border-top:1px solid #999;padding-top:6px;text-align:center;font-size:11px;color:#555}
         .pie{margin-top:20px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #E6DFD2;padding-top:8px}
+        .color-etiqueta{display:flex;align-items:center;gap:6px}
+        .swatch{display:inline-block;width:14px;height:14px;border:1px solid #555;-webkit-print-color-adjust:exact;print-color-adjust:exact}
       </style>
     </head>
     <body>
@@ -132,16 +154,17 @@ function generarHtmlRemito(envio, fardos) {
         </div>
         <div class="fecha-doc">
           <div><b>Fecha:</b> ${fechaFormateada}</div>
-          <div><b>Hora:</b> ${envio.hora || ''}</div>
+          <div><b>Hora:</b> ${escaparHtml(envio.hora)}</div>
         </div>
       </div>
 
       <h2>Datos del envío</h2>
       <div class="grid">
-        <div class="dato"><b>Agricultor:</b> ${envio.agricultor_nombre || ''}</div>
-        <div class="dato"><b>Código agricultor:</b> ${envio.agricultor_codigo || ''}</div>
-        <div class="dato"><b>Operador:</b> ${envio.comprador_nombre || 'N/D'}</div>
+        <div class="dato"><b>Agricultor:</b> ${escaparHtml(envio.agricultor_nombre)}</div>
+        <div class="dato"><b>Código agricultor:</b> ${escaparHtml(envio.agricultor_codigo)}</div>
+        <div class="dato"><b>Operador:</b> ${escaparHtml(envio.comprador_nombre || 'N/D')}</div>
         <div class="dato"><b>Ubicación GPS:</b> ${gpsTexto}</div>
+        ${bloqueColorEtiqueta}
       </div>
 
       ${seccionTransporte}
