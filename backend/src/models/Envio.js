@@ -49,6 +49,18 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+    color_etiqueta_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    color_etiqueta_nombre: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    color_etiqueta_hex: {
+      type: DataTypes.CHAR(7),
+      allowNull: true,
+    },
     observaciones: {
       type: DataTypes.STRING(50),
       allowNull: true,

@@ -1,149 +1,46 @@
-// Funciones para el panel de administración
-
-// Manejo del login
-document.addEventListener('DOMContentLoaded', function() {
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', manejarLogin);
-    }
-});
-
-async function manejarLogin(e) {
-    e.preventDefault();
-    
-    const usuario = document.getElementById('usuario').value;
-    const contrasena = document.getElementById('contrasena').value;
-    const errorMessage = document.getElementById('error-message');
-    
+// Funciones para colores de etiqueta
+async function cargarColoresEtiqueta() {
     try {
-        const response = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ usuario, contrasena })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            // Redirigir al panel principal
-            window.location.href = '/admin/';
-        } else {
-            errorMessage.textContent = data.error || 'Credenciales incorrectas';
-            errorMessage.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Error en login:', error);
-        errorMessage.textContent = 'Error de conexión';
-        errorMessage.style.display = 'block';
-    }
-}
-
-// Verificar sesión activa
-async function verificarSesion() {
-    try {
-        const response = await fetch('/api/admin/dashboard', {
+        const response = await fetch('/api/admin/colores-etiqueta?page=1&limit=20', {
             method: 'GET',
             credentials: 'include'
         });
         
         if (!response.ok) {
-            // Si no hay sesión, redirigir al login
-            window.location.href = '/admin/login';
-        }
-    } catch (error) {
-        console.error('Error verificando sesión:', error);
-        window.location.href = '/admin/login';
-    }
-}
-
-// Cerrar sesión
-async function cerrarSesion() {
-    try {
-        await fetch('/api/admin/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        window.location.href = '/admin/login';
-    } catch (error) {
-        console.error('Error cerrando sesión:', error);
-        window.location.href = '/admin/login';
-    }
-}
-
-// Cargar contenido del panel
-function cargarContenido(seccion) {
-    const contenidoPrincipal = document.getElementById('contenido-principal');
-    
-    switch(seccion) {
-        case 'usuarios':
-            cargarUsuarios();
-            break;
-        case 'transportistas':
-            cargarTransportistas();
-            break;
-        default:
-            contenidoPrincipal.innerHTML = '<h2>Bienvenido al panel de administración</h2>';
-    }
-}
-
-// Funciones para usuarios
-async function cargarUsuarios() {
-    try {
-        const response = await fetch('/api/admin/users?page=1&limit=20', {
-            method: 'GET',
-            credentials: 'include'
-        });
-        
-        if (!response.ok) {
-            throw new Error('Error al cargar usuarios');
+            throw new Error('Error al cargar colores');
         }
         
         const data = await response.json();
-        mostrarUsuarios(data);
+        mostrarColoresEtiqueta(data);
     } catch (error) {
-        console.error('Error cargando usuarios:', error);
+        console.error('Error cargando colores:', error);
         document.getElementById('contenido-principal').innerHTML = 
-            '<div class="error-message">Error al cargar usuarios</div>';
+            '<div class="error-message">Error al cargar colores de etiqueta</div>';
     }
 }
 
-function mostrarUsuarios(data) {
+function mostrarColoresEtiqueta(data) {
     const contenido = document.getElementById('contenido-principal');
     let html = `
-        <h2>Gestión de Usuarios</h2>
-        <div class="form-container" id="formUsuarioContainer">
-            <h3 id="usuarioFormTitle">Agregar Nuevo Usuario</h3>
-            <form id="formUsuario">
-                <input type="hidden" id="usuarioId">
+        <h2>Gestión de Colores de Etiqueta</h2>
+        <div class="form-container" id="formColorEtiquetaContainer">
+            <h3 id="colorEtiquetaFormTitle">Agregar Nuevo Color</h3>
+            <form id="formColorEtiqueta">
+                <input type="hidden" id="colorEtiquetaId">
                 <div class="form-group">
                     <label for="nombre">Nombre:</label>
                     <input type="text" id="nombre" required>
                 </div>
                 <div class="form-group">
-                    <label for="usuario">Usuario:</label>
-                    <input type="text" id="usuario" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Contraseña:</label>
-                    <input type="password" id="password">
-                </div>
-                <div class="form-group">
-                    <label for="rol">Rol:</label>
-                    <select id="rol">
-                        <option value="comprador">Comprador</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="activo" checked> Activo
-                    </label>
+                    <label for="hex">Código Hexadecimal:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="color" id="colorPicker" style="width: 50px; height: 40px; padding: 0; border: none;">
+                        <input type="text" id="hex" placeholder="#RRGGBB" required>
+                    </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" onclick="guardarUsuario()" class="btn btn-primary">Guardar Usuario</button>
-                    <button type="button" onclick="cancelarEdicion()" class="btn btn-secondary">Cancelar</button>
+                    <button type="button" onclick="guardarColorEtiqueta()" class="btn btn-primary">Guardar Color</button>
+                    <button type="button" onclick="cancelarEdicionColorEtiqueta()" class="btn btn-secondary">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -151,10 +48,9 @@ function mostrarUsuarios(data) {
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Usuario</th>
-                        <th>Rol</th>
+                        <th style="width: 50px;"></th>
+                        <th style="width: 150px;">Nombre</th>
+                        <th>Hex</th>
                         <th>Activo</th>
                         <th>Acciones</th>
                     </tr>
@@ -162,17 +58,17 @@ function mostrarUsuarios(data) {
                 <tbody>
     `;
     
-    data.usuarios.forEach(usuario => {
+    data.colores_etiqueta.forEach(color => {
         html += `
             <tr>
-                <td>${usuario.id}</td>
-                <td>${usuario.nombre}</td>
-                <td>${usuario.usuario}</td>
-                <td>${usuario.rol}</td>
-                <td>${usuario.activo ? 'Sí' : 'No'}</td>
+                <td><div style="width: 24px; height: 24px; border: 1px solid #555; background-color: ${color.hex};"></div></td>
+                <td>${color.nombre}</td>
+                <td><code>${color.hex}</code></td>
+                <td>${color.activo ? 'Sí' : 'No'}</td>
                 <td class="action-buttons">
-                    <button class="action-btn btn-edit" onclick="editarUsuario(${usuario.id})">Editar</button>
-                    <button class="action-btn btn-delete" onclick="eliminarUsuario(${usuario.id})">Eliminar</button>
+                    <button class="action-btn btn-edit" onclick="editarColorEtiqueta(${color.id})">Editar</button>
+                    <button class="action-btn btn-delete" onclick="eliminarColorEtiqueta(${color.id})">Eliminar</button>
+                    <button class="action-btn btn-toggle" onclick="toggleColorEtiquetaStatus(${color.id})">${color.activo ? 'Desactivar' : 'Activar'}</button>
                 </td>
             </tr>
         `;
@@ -185,351 +81,144 @@ function mostrarUsuarios(data) {
     `;
     
     contenido.innerHTML = html;
+
+    // Sincronizar color picker con input hex
+    const picker = document.getElementById('colorPicker');
+    const hexInput = document.getElementById('hex');
+    
+    if (picker && hexInput) {
+        picker.addEventListener('input', (e) => {
+            hexInput.value = e.target.value.toUpperCase();
+        });
+        hexInput.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (val && !val.startsWith('#')) {
+                val = '#' + val;
+            }
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                picker.value = val;
+            }
+        });
+    }
 }
 
-async function guardarUsuario() {
-    const id = document.getElementById('usuarioId').value;
+async function guardarColorEtiqueta() {
+    const id = document.getElementById('colorEtiquetaId').value;
     const nombre = document.getElementById('nombre').value;
-    const usuario = document.getElementById('usuario').value;
-    const password = document.getElementById('password').value;
-    const rol = document.getElementById('rol').value;
-    const activo = document.getElementById('activo').checked;
+    let hex = document.getElementById('hex').value;
     
+    if (hex && !hex.startsWith('#')) {
+        hex = '#' + hex;
+    }
+    hex = hex.toUpperCase();
+
     try {
         let response;
         let url;
         
         if (id) {
-            // Actualizar usuario existente
-            url = `/api/admin/users/${id}`;
+            url = `/api/admin/colores-etiqueta/${id}`;
             response = await fetch(url, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ nombre, usuario, password, rol, activo })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, hex })
             });
         } else {
-            // Crear nuevo usuario
-            url = '/api/admin/users';
+            url = '/api/admin/colores-etiqueta';
             response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ nombre, usuario, password, rol, activo })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, hex })
             });
         }
         
         const data = await response.json();
         
         if (response.ok) {
-            alert('Usuario guardado correctamente');
-            cargarUsuarios();
+            alert('Color guardado correctamente');
+            cargarColoresEtiqueta();
         } else {
-            alert('Error: ' + (data.error || 'No se pudo guardar el usuario'));
+            alert('Error: ' + (data.error || 'No se pudo guardar el color'));
         }
     } catch (error) {
-        console.error('Error guardando usuario:', error);
+        console.error('Error guardando color:', error);
         alert('Error de conexión');
     }
 }
 
-async function editarUsuario(id) {
+async function editarColorEtiqueta(id) {
     try {
-        const response = await fetch(`/api/admin/users/${id}`, {
+        const response = await fetch(`/api/admin/colores-etiqueta/${id}`, {
             method: 'GET',
             credentials: 'include'
         });
         
-        if (!response.ok) {
-            throw new Error('Error al cargar usuario');
-        }
+        if (!response.ok) throw new Error('Error al cargar color');
         
         const data = await response.json();
-        const usuario = data.usuario;
+        const color = data.color;
         
-        // Mostrar formulario de edición
-        document.getElementById('usuarioId').value = usuario.id;
-        document.getElementById('nombre').value = usuario.nombre;
-        document.getElementById('usuario').value = usuario.usuario;
-        document.getElementById('password').value = '';
-        document.getElementById('rol').value = usuario.rol;
-        document.getElementById('activo').checked = usuario.activo;
-        document.getElementById('usuarioFormTitle').textContent = 'Editar Usuario';
+        document.getElementById('colorEtiquetaId').value = color.id;
+        document.getElementById('nombre').value = color.nombre;
+        document.getElementById('hex').value = color.hex;
+        document.getElementById('colorPicker').value = color.hex;
+        document.getElementById('colorEtiquetaFormTitle').textContent = 'Editar Color';
         
-        // Mostrar formulario y ocultar tabla
-        document.getElementById('formUsuarioContainer').style.display = 'block';
+        document.getElementById('formColorEtiquetaContainer').style.display = 'block';
         document.querySelector('.table-container').style.display = 'none';
     } catch (error) {
-        console.error('Error cargando usuario para edición:', error);
-        alert('Error al cargar usuario para edición');
+        console.error('Error cargando color:', error);
+        alert('Error al cargar color para edición');
     }
 }
 
-function cancelarEdicion() {
-    // Limpiar formulario y volver a mostrar tabla
-    document.getElementById('usuarioId').value = '';
+function cancelarEdicionColorEtiqueta() {
+    document.getElementById('colorEtiquetaId').value = '';
     document.getElementById('nombre').value = '';
-    document.getElementById('usuario').value = '';
-    document.getElementById('password').value = '';
-    document.getElementById('rol').value = 'comprador';
-    document.getElementById('activo').checked = true;
-    document.getElementById('usuarioFormTitle').textContent = 'Agregar Nuevo Usuario';
+    document.getElementById('hex').value = '';
+    document.getElementById('colorEtiquetaFormTitle').textContent = 'Agregar Nuevo Color';
     
-    // Mostrar tabla y ocultar formulario
-    document.getElementById('formUsuarioContainer').style.display = 'none';
+    document.getElementById('formColorEtiquetaContainer').style.display = 'none';
     document.querySelector('.table-container').style.display = 'block';
 }
 
-function cancelarEdicionTransportista() {
-    // Limpiar formulario y volver a mostrar tabla
-    document.getElementById('transportistaId').value = '';
-    document.getElementById('empresa').value = '';
-    document.getElementById('nombre_chofer').value = '';
-    document.getElementById('documento').value = '';
-    document.getElementById('matricula').value = '';
-    document.getElementById('activoTransportista').checked = true;
-    document.getElementById('transportistaFormTitle').textContent = 'Agregar Nuevo Transportista';
-    
-    // Mostrar tabla y ocultar formulario
-    document.getElementById('formTransportistaContainer').style.display = 'none';
-    document.querySelector('.table-container').style.display = 'block';
-}
-
-async function eliminarUsuario(id) {
-    if (!confirm('¿Está seguro de que desea eliminar este usuario?')) {
-        return;
-    }
+async function eliminarColorEtiqueta(id) {
+    if (!confirm('¿Está seguro de que desea eliminar este color?')) return;
     
     try {
-        const response = await fetch(`/api/admin/users/${id}`, {
+        const response = await fetch(`/api/admin/colores-etiqueta/${id}`, {
             method: 'DELETE',
             credentials: 'include'
         });
         
         const data = await response.json();
-        
         if (response.ok) {
-            alert('Usuario eliminado correctamente');
-            cargarUsuarios();
+            alert('Color eliminado correctamente');
+            cargarColoresEtiqueta();
         } else {
-            alert('Error: ' + (data.error || 'No se pudo eliminar el usuario'));
+            alert('Error: ' + (data.error || 'No se pudo eliminar el color'));
         }
     } catch (error) {
-        console.error('Error eliminando usuario:', error);
+        console.error('Error eliminando color:', error);
         alert('Error de conexión');
     }
 }
 
-// Funciones para transportistas
-async function cargarTransportistas() {
+async function toggleColorEtiquetaStatus(id) {
     try {
-        const response = await fetch('/api/admin/transporters?page=1&limit=20', {
-            method: 'GET',
+        const response = await fetch(`/api/admin/colores-etiqueta/${id}/toggle`, {
+            method: 'PATCH',
             credentials: 'include'
         });
-        
-        if (!response.ok) {
-            throw new Error('Error al cargar transportistas');
-        }
-        
-        const data = await response.json();
-        mostrarTransportistas(data);
-    } catch (error) {
-        console.error('Error cargando transportistas:', error);
-        document.getElementById('contenido-principal').innerHTML = 
-            '<div class="error-message">Error al cargar transportistas</div>';
-    }
-}
-
-function mostrarTransportistas(data) {
-    const contenido = document.getElementById('contenido-principal');
-    let html = `
-        <h2>Gestión de Transportistas</h2>
-        <div class="form-container" id="formTransportistaContainer">
-            <h3 id="transportistaFormTitle">Agregar Nuevo Transportista</h3>
-            <form id="formTransportista">
-                <input type="hidden" id="transportistaId">
-                <div class="form-group">
-                    <label for="empresa">Empresa:</label>
-                    <input type="text" id="empresa" required>
-                </div>
-                <div class="form-group">
-                    <label for="nombre_chofer">Nombre del Chofer:</label>
-                    <input type="text" id="nombre_chofer" required>
-                </div>
-                <div class="form-group">
-                    <label for="documento">Documento:</label>
-                    <input type="text" id="documento">
-                </div>
-                <div class="form-group">
-                    <label for="matricula">Matrícula:</label>
-                    <input type="text" id="matricula" required>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="activoTransportista" checked> Activo
-                    </label>
-                </div>
-                <div class="form-actions">
-                    <button type="button" onclick="guardarTransportista()" class="btn btn-primary">Guardar Transportista</button>
-                    <button type="button" onclick="cancelarEdicionTransportista()" class="btn btn-secondary">Cancelar</button>
-                </div>
-            </form>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Empresa</th>
-                        <th>Chofer</th>
-                        <th>Matrícula</th>
-                        <th>Activo</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    data.transportistas.forEach(transportista => {
-        html += `
-            <tr>
-                <td>${transportista.id}</td>
-                <td>${transportista.empresa}</td>
-                <td>${transportista.nombre_chofer}</td>
-                <td>${transportista.matricula}</td>
-                <td>${transportista.activo ? 'Sí' : 'No'}</td>
-                <td class="action-buttons">
-                    <button class="action-btn btn-edit" onclick="editarTransportista(${transportista.id})">Editar</button>
-                    <button class="action-btn btn-delete" onclick="eliminarTransportista(${transportista.id})">Eliminar</button>
-                </td>
-            </tr>
-        `;
-    });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    contenido.innerHTML = html;
-}
-
-async function guardarTransportista() {
-    const id = document.getElementById('transportistaId').value;
-    const empresa = document.getElementById('empresa').value;
-    const nombre_chofer = document.getElementById('nombre_chofer').value;
-    const documento = document.getElementById('documento').value;
-    const matricula = document.getElementById('matricula').value;
-    const activo = document.getElementById('activoTransportista').checked;
-    
-    try {
-        let response;
-        let url;
-        
-        if (id) {
-            // Actualizar transportista existente
-            url = `/api/admin/transporters/${id}`;
-            response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ empresa, nombre_chofer, documento, matricula, activo })
-            });
-        } else {
-            // Crear nuevo transportista
-            url = '/api/admin/transporters';
-            response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ empresa, nombre_chofer, documento, matricula, activo })
-            });
-        }
-        
-        const data = await response.json();
         
         if (response.ok) {
-            alert('Transportista guardado correctamente');
-            cargarTransportistas();
+            cargarColoresEtiqueta();
         } else {
-            alert('Error: ' + (data.error || 'No se pudo guardar el transportista'));
+            const data = await response.json();
+            alert('Error: ' + (data.error || 'No se pudo cambiar el estado'));
         }
     } catch (error) {
-        console.error('Error guardando transportista:', error);
-        alert('Error de conexión');
-    }
-}
-
-async function editarTransportista(id) {
-    try {
-        const response = await fetch(`/api/admin/transporters/${id}`, {
-            method: 'GET',
-            credentials: 'include'
-        });
-        
-        if (!response.ok) {
-            throw new Error('Error al cargar transportista');
-        }
-        
-        const data = await response.json();
-        const transportista = data.transportista;
-        
-        // Mostrar formulario de edición
-        document.getElementById('transportistaId').value = transportista.id;
-        document.getElementById('empresa').value = transportista.empresa;
-        document.getElementById('nombre_chofer').value = transportista.nombre_chofer;
-        document.getElementById('documento').value = transportista.documento || '';
-        document.getElementById('matricula').value = transportista.matricula;
-        document.getElementById('activoTransportista').checked = transportista.activo;
-        document.getElementById('transportistaFormTitle').textContent = 'Editar Transportista';
-        
-        // Mostrar formulario y ocultar tabla
-        document.getElementById('formTransportistaContainer').style.display = 'block';
-        document.querySelector('.table-container').style.display = 'none';
-    } catch (error) {
-        console.error('Error cargando transportista para edición:', error);
-        alert('Error al cargar transportista para edición');
-    }
-}
-
-function cancelarEdicionTransportista() {
-    // Limpiar formulario y volver a mostrar tabla
-    document.getElementById('transportistaId').value = '';
-    document.getElementById('empresa').value = '';
-    document.getElementById('nombre_chofer').value = '';
-    document.getElementById('documento').value = '';
-    document.getElementById('matricula').value = '';
-    document.getElementById('activoTransportista').checked = true;
-    document.getElementById('transportistaFormTitle').textContent = 'Agregar Nuevo Transportista';
-}
-
-async function eliminarTransportista(id) {
-    if (!confirm('¿Está seguro de que desea eliminar este transportista?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/admin/transporters/${id}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Transportista eliminado correctamente');
-            cargarTransportistas();
-        } else {
-            alert('Error: ' + (data.error || 'No se pudo eliminar el transportista'));
-        }
-    } catch (error) {
-        console.error('Error eliminando transportista:', error);
+        console.error('Error cambiando estado:', error);
         alert('Error de conexión');
     }
 }

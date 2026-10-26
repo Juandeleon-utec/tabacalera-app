@@ -35,37 +35,50 @@ export async function inicializarBaseDeDatos() {
       activo INTEGER DEFAULT 1
     );
 
-    CREATE TABLE IF NOT EXISTS transportistas (
-      id INTEGER PRIMARY KEY,
-      empresa TEXT NOT NULL,
-      nombre_chofer TEXT NOT NULL,
-      documento TEXT,
-      matricula TEXT NOT NULL,
-      activo INTEGER DEFAULT 1
-    );
+     CREATE TABLE IF NOT EXISTS transportistas (
+       id INTEGER PRIMARY KEY,
+       empresa TEXT NOT NULL,
+       nombre_chofer TEXT NOT NULL,
+       documento TEXT,
+       matricula TEXT NOT NULL,
+       activo INTEGER DEFAULT 1
+     );
 
-    CREATE TABLE IF NOT EXISTS envios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      id_local TEXT UNIQUE NOT NULL,
-      usuario_id INTEGER NOT NULL,
-      agricultor_id INTEGER NOT NULL,
-      agricultor_codigo TEXT NOT NULL,
-      agricultor_nombre TEXT NOT NULL,
-      transportista_id INTEGER,
-      documento_chofer_real TEXT,
-      observaciones TEXT,
-      fecha TEXT NOT NULL,
-      hora TEXT NOT NULL,
-      gps_lat REAL,
-      gps_lng REAL,
-      estado TEXT DEFAULT 'abierto',
-      sincronizado INTEGER DEFAULT 0,
-      sincronizado_at TEXT,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-      FOREIGN KEY (agricultor_id) REFERENCES agricultores(id),
-      FOREIGN KEY (transportista_id) REFERENCES transportistas(id)
-    );
+     CREATE TABLE IF NOT EXISTS colores_etiqueta (
+       id INTEGER PRIMARY KEY,
+       nombre TEXT NOT NULL,
+       hex TEXT NOT NULL,
+       activo INTEGER DEFAULT 1,
+       UNIQUE(nombre)
+     );
+
+     CREATE TABLE IF NOT EXISTS envios (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       id_local TEXT UNIQUE NOT NULL,
+       usuario_id INTEGER NOT NULL,
+       agricultor_id INTEGER NOT NULL,
+       agricultor_codigo TEXT NOT NULL,
+       agricultor_nombre TEXT NOT NULL,
+       transportista_id INTEGER,
+       documento_chofer_real TEXT,
+       observaciones TEXT,
+       color_etiqueta_id INTEGER,
+       color_etiqueta_nombre TEXT,
+       color_etiqueta_hex TEXT,
+       fecha TEXT NOT NULL,
+       hora TEXT NOT NULL,
+       gps_lat REAL,
+       gps_lng REAL,
+       estado TEXT DEFAULT 'abierto',
+       sincronizado INTEGER DEFAULT 0,
+       sincronizado_at TEXT,
+       created_at TEXT NOT NULL,
+       FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+       FOREIGN KEY (agricultor_id) REFERENCES agricultores(id),
+       FOREIGN KEY (transportista_id) REFERENCES transportistas(id),
+       FOREIGN KEY (color_etiqueta_id) REFERENCES colores_etiqueta(id)
+     );
+
 
     CREATE TABLE IF NOT EXISTS fardos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,6 +105,9 @@ export async function inicializarBaseDeDatos() {
     'ALTER TABLE envios ADD COLUMN transportista_id INTEGER',
     'ALTER TABLE envios ADD COLUMN documento_chofer_real TEXT',
     'ALTER TABLE envios ADD COLUMN observaciones TEXT',
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_id INTEGER',
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_nombre TEXT',
+    'ALTER TABLE envios ADD COLUMN color_etiqueta_hex TEXT',
   ];
   for (const sql of migraciones) {
     try {
