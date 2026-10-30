@@ -7,7 +7,8 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "db:migrate": "node src/db/migrate.js",
-    "db:seed": "node src/db/seed.js"
+    "db:seed": "node src/db/seed.js",
+    "db:migrate:colores": "node src/db/migrar-colores-etiqueta.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

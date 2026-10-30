@@ -41,6 +41,7 @@ export async function imprimirComprobante(envio, fardos, sesion) {
     empresa: t?.empresa || '',
     chofer: t?.nombre_chofer || '',
     matricula: t?.matricula || '',
+    colorEtiqueta: envio.color_etiqueta_nombre || '',
     fecha: envio.fecha || '',
     hora: envio.hora || '',
     operador: sesion?.nombre || '',

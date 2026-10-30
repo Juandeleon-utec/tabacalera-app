@@ -16,7 +16,7 @@ Sistema completo para registrar la compra de fardos de tabaco en campo, compuest
 ```
 
 La app funciona **100% offline**. Solo necesita WiFi interno para:
-1. Sincronización inicial (descargar usuarios, agricultores y transportistas)
+1. Sincronización inicial (descargar usuarios, agricultores, transportistas y colores de etiqueta)
 2. Envío de remitos cerrados al servidor
 
 El comprobante de la transacción es un **PDF** generado en el dispositivo y
@@ -85,10 +85,19 @@ npm start
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | `GET` | `/api/health` | No | Estado del servidor |
-| `GET` | `/api/sync` | Solo red interna | Descarga usuarios + agricultores + transportistas |
+| `GET` | `/api/sync` | Solo red interna | Descarga usuarios + agricultores + transportistas + colores de etiqueta (activos) |
 | `POST` | `/api/envios/sync` | JWT | Sube envíos cerrados desde la app |
 | `GET` | `/api/envios` | JWT | Lista todos los envíos |
 | `GET` | `/api/envios/:id` | JWT | Detalle de un envío |
+| `GET` | `/api/admin/colores-etiqueta` | Sesión admin | Lista colores de etiqueta |
+| `POST` | `/api/admin/colores-etiqueta` | Sesión admin | Crea un color (`nombre`, `hex`, `activo`) |
+| `PUT` | `/api/admin/colores-etiqueta/:id` | Sesión admin | Modifica un color |
+| `PATCH` | `/api/admin/colores-etiqueta/:id/desactivar` | Sesión admin | Desactiva un color |
+| `DELETE` | `/api/admin/colores-etiqueta/:id` | Sesión admin | Elimina un color (409 si tiene envíos asociados) |
+
+`POST /api/envios/sync` acepta además `color_etiqueta_id`, `color_etiqueta_nombre`
+y `color_etiqueta_hex` por envío. Son opcionales: los APK anteriores a 1.3.0
+no los envían y el envío se guarda igual con esos campos en `NULL`.
 
 > **Pendiente de verificar:** si existen endpoints separados para
 > transportistas (ej. `GET /api/transportistas`), agregarlos a esta tabla.
@@ -117,6 +126,61 @@ Salir de los logs con `Ctrl+C`.
 ```bash
 cd ~/node_app/tabacalera-app && git pull origin main && cd backend && npm install && pm2 restart tabacalera-backend && pm2 logs tabacalera-backend
 ```
+
+### Migración: colores de etiqueta (app 1.3.0)
+
+Esta versión agrega la tabla `colores_etiqueta` y tres columnas en `envios`.
+Se aplica con un script **idempotente** que no usa `sync({ alter })`.
+Hay que correrlo **una vez, antes de reiniciar PM2**: el código nuevo consulta
+las columnas nuevas y fallaría si no existen.
+
+```bash
+cd ~/node_app/tabacalera-app && git pull origin main
+cd backend && npm install
+
+# Backup previo (recomendado)
+mysqldump -u tabacalera_user -p tabacalera_db envios > ~/backup_envios_$(date +%F).sql
+
+npm run db:migrate:colores
+npm run db:seed        # carga los colores iniciales (findOrCreate, no duplica)
+pm2 restart tabacalera-backend
+```
+
+Salida esperada de la migración:
+```
+Tabla colores_etiqueta: OK
+Columna envios.color_etiqueta_id: creada
+Columna envios.color_etiqueta_nombre: creada
+Columna envios.color_etiqueta_hex: creada
+FK envios.color_etiqueta_id: creada
+Migración colores de etiqueta completada.
+```
+Si se vuelve a correr, informa `ya existía` en cada paso.
+
+> Los colores iniciales están en `backend/src/db/seed.js` (array `coloresEtiqueta`).
+> Confirmar nombres y hex con planta antes de correr el seed en producción;
+> después se administran desde el panel.
+
+### Tabla `colores_etiqueta`
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `id` | INT PK AI | |
+| `nombre` | VARCHAR(50) NOT NULL UNIQUE | ej. "Rojo" |
+| `hex` | CHAR(7) NOT NULL | `#RRGGBB` en mayúsculas. Se acepta `RRGGBB` y se normaliza |
+| `activo` | BOOLEAN DEFAULT true | Solo los activos se descargan a la app |
+| `created_at` / `updated_at` | DATETIME | |
+
+En `envios` se agregan (nullable, para no afectar compras anteriores):
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `color_etiqueta_id` | INT FK → `colores_etiqueta.id` | `ON DELETE SET NULL` |
+| `color_etiqueta_nombre` | VARCHAR(50) | Snapshot al momento de la compra |
+| `color_etiqueta_hex` | CHAR(7) | Snapshot al momento de la compra |
+
+Nombre y hex se copian en el envío: si después se edita un color en el panel,
+los históricos y PDFs ya emitidos no cambian.
 
 ---
 
@@ -237,6 +301,11 @@ Incrementar en `app/app.json`:
 | 1.0.3 | 4 | — | Correcciones historial + actualización transportistas |
 | 1.0.4 | 5 | — | Mejoras escáner QR |
 | 1.0.5 | 6 | 08/2026 | Build local con Gradle (se descontinúa EAS) |
+| 1.3.0 | 7 | 10/2026 | Color de etiqueta en la compra (selector, PDF, ticket) |
+
+> El build local de Gradle quedó con `versionName 1.2.1` / `versionCode 2`, que no
+> coincide con esta tabla. En 1.3.0 se usa `versionCode 7` para superar cualquier
+> APK instalado (2 o 6). Android rechaza actualizar si el versionCode no es mayor.
 
 ---
 
@@ -265,6 +334,7 @@ El panel de administración está disponible en la ruta `/admin` del backend.
 - Funcionalidades:
   - Gestión de usuarios (listado, alta, modificación, baja)
   - Gestión de transportistas (listado, alta, modificación, baja)
+  - Gestión de colores de etiqueta (listado, alta, modificación, desactivación, baja)
   - Autenticación con sesiones server-side (15 minutos de expiración)
   - Validación de referencias antes de eliminación
   - Compatibilidad con la aplicación móvil existente
@@ -294,7 +364,7 @@ de producción, por lo que `app.json` debe mantener:
 1. El dispositivo debe estar en la **red WiFi interna** de la empresa.
 2. Ingresar con usuario `admin` y la contraseña configurada.
 3. Presionar **"Sincronizar todo"**.
-4. La app descarga usuarios, agricultores y transportistas desde el servidor.
+4. La app descarga usuarios, agricultores, transportistas y colores de etiqueta desde el servidor.
 5. Cerrar sesión admin. Los compradores de campo ya pueden ingresar.
 
 ### Uso diario (compradores de campo)
@@ -303,11 +373,32 @@ de producción, por lo que `app.json` debe mantener:
 2. Seleccionar el agricultor de la lista.
 3. Seleccionar empresa transportista y chofer.
 4. Completar datos opcionales (documento, observaciones).
-5. Escanear los fardos con la cámara del celular.
-6. Al terminar, presionar **"Cerrar envío"**.
-7. El PDF se guarda automáticamente en `/Downloads/Montepaz/`.
-8. Compartir el PDF por WhatsApp.
-9. Al volver a la red WiFi de planta, sincronizar los envíos pendientes.
+5. Seleccionar el **color de etiqueta** (obligatorio: sin color no se habilita
+   "Comenzar escaneo"). El color elegido se muestra en la pantalla del escáner.
+6. Escanear los fardos con la cámara del celular.
+7. Al terminar, presionar **"Cerrar envío"**.
+8. El PDF se guarda automáticamente en `/Downloads/Montepaz/`.
+9. Compartir el PDF por WhatsApp.
+10. Al volver a la red WiFi de planta, sincronizar los envíos pendientes.
+
+> Los colores de etiqueta se descargan junto con los agricultores en la
+> **sincronización inicial** del superadmin ("Sincronizar todo"). El botón
+> "Actualizar transportistas" no los actualiza. Si el catálogo local está
+> vacío, la pantalla de transporte muestra el aviso para sincronizar.
+
+### Migración de la base local (SQLite)
+
+Al iniciar, la app ejecuta `inicializarBaseDeDatos()`: crea las tablas que
+falten (`CREATE TABLE IF NOT EXISTS`) y aplica una lista de
+`ALTER TABLE ... ADD COLUMN` idempotentes (si la columna ya existe, el error
+se ignora). En 1.3.0 se agregan:
+
+- Tabla `colores_etiqueta (id, nombre, hex, activo)`.
+- Columnas `color_etiqueta_id`, `color_etiqueta_nombre`, `color_etiqueta_hex`
+  en `envios`. Las compras anteriores quedan con esos campos en `NULL`, y sus PDFs
+  se generan sin el bloque de color.
+
+Actualizar el APK sobre una instalación existente no borra datos.
 
 ### Formato del código QR
 
@@ -546,7 +637,8 @@ tabacalera-app/
 │   │   ├── PantallaEnvio.js      # Resumen + cerrar + PDF
 │   │   └── PantallaHistorial.js  # Historial de envíos por fecha
 │   ├── components/
-│   │   └── ItemFardo.js          # Fila de la lista de fardos
+│   │   ├── ItemFardo.js          # Fila de la lista de fardos
+│   │   └── MuestraColor.js       # Cuadrado de color de etiqueta
 │   ├── services/
 │   │   ├── baseDeDatos.js        # SQLite: todas las operaciones
 │   │   ├── autenticacion.js      # Login, sesión, vencimiento
@@ -563,12 +655,14 @@ tabacalera-app/
         ├── app.js                # Entry point Express
         ├── db/
         │   ├── migrate.js        # Crear/actualizar tablas
+        │   ├── migrar-colores-etiqueta.js  # Migración idempotente app 1.3.0
         │   └── seed.js           # Datos de ejemplo
         ├── models/
         │   ├── index.js          # Sequelize + relaciones
         │   ├── Usuario.js
         │   ├── Agricultor.js
         │   ├── Transportista.js
+        │   ├── ColorEtiqueta.js
         │   ├── Envio.js
         │   └── Fardo.js
         ├── routes/
@@ -619,7 +713,7 @@ Logo: reemplazar `app/assets/logo.png`
 ## Panel de Administración
 
 El panel de administración se encuentra disponible en `/admin` y permite:
-- Gestión completa de usuarios y transportistas
+- Gestión completa de usuarios, transportistas y colores de etiqueta
 - Validación de referencias antes de eliminar registros
 - Sesiones con expiración de 15 minutos de inactividad
 - Acceso desde navegadores de escritorio o móvil
@@ -644,6 +738,10 @@ reutilización del software sin autorización expresa del autor.
 - **Autenticación**: Inicio de sesión con credenciales admin
 - **Gestión de usuarios**: Listado, alta, modificación y baja
 - **Gestión de transportistas**: Listado, alta, modificación y baja
+- **Gestión de colores de etiqueta**: Listado con muestra del color, alta, modificación,
+  desactivación y baja. El formulario tiene un selector de color sincronizado con un
+  campo de texto hex (`#RRGGBB`). Un color usado en envíos no se puede eliminar:
+  el panel ofrece desactivarlo, y deja de aparecer en la app en la próxima sincronización.
 - **Validación de referencias**: Impedir eliminación de registros con dependencias
 - **Sesiones seguras**: Server-side con expiración de 15 minutos
 - **Compatibilidad**: No afecta la funcionalidad de la aplicación móvil

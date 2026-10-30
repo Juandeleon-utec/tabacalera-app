@@ -49,6 +49,12 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+    observaciones: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    // Color de etiqueta: se guarda id + snapshot de nombre/hex para que
+    // ediciones posteriores del catálogo no alteren históricos ni PDFs
     color_etiqueta_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -59,10 +65,6 @@ module.exports = (sequelize) => {
     },
     color_etiqueta_hex: {
       type: DataTypes.CHAR(7),
-      allowNull: true,
-    },
-    observaciones: {
-      type: DataTypes.STRING(50),
       allowNull: true,
     },
     sincronizado_at: {

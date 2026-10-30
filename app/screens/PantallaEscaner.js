@@ -7,12 +7,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { insertarFardo, listarFardosPorEnvio } from '../services/baseDeDatos';
 import { validarCodigoQR, esCodigoQrConFormato } from '../services/validadorQR';
 import ItemFardo from '../components/ItemFardo';
+import MuestraColor from '../components/MuestraColor';
 import COLORES from '../constants/colores';
 
 const PANTALLA = Dimensions.get('window');
 
 export default function PantallaEscaner({ navigation, route }) {
-  const { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, sesion, fecha, hora, gps } = route.params;
+  const { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, colorEtiqueta, sesion, fecha, hora, gps } = route.params;
 
   const [permiso, solicitarPermiso] = useCameraPermissions();
   const [escaneando, setEscaneando] = useState(true);
@@ -79,7 +80,7 @@ export default function PantallaEscaner({ navigation, route }) {
       Alert.alert('Sin fardos válidos', 'No hay fardos válidos para cerrar el envío.');
       return;
     }
-    navigation.navigate('Envio', { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, sesion, fecha, hora, gps });
+    navigation.navigate('Envio', { envioId, idLocal, agricultor, transportista, documentoChoferReal, observaciones, colorEtiqueta, sesion, fecha, hora, gps });
   }
 
   if (!permiso) return <View style={estilos.contenedor} />;
@@ -128,6 +129,12 @@ export default function PantallaEscaner({ navigation, route }) {
           <View style={estilos.infoAgricultor}>
             <Text style={estilos.textoAgricultor}>{agricultor.nombre}</Text>
             <Text style={estilos.codigoAgricultor}>Código: {agricultor.codigo_6dig}</Text>
+            {colorEtiqueta && (
+              <View style={estilos.colorEtiqueta}>
+                <MuestraColor hex={colorEtiqueta.hex} tamaño={16} />
+                <Text style={estilos.textoColorEtiqueta}>Etiqueta: {colorEtiqueta.nombre}</Text>
+              </View>
+            )}
           </View>
         </CameraView>
       </View>
@@ -206,6 +213,8 @@ const estilos = StyleSheet.create({
   },
   textoAgricultor: { color: COLORES.textoBlanco, fontSize: 14, fontWeight: 'bold' },
   codigoAgricultor: { color: COLORES.sobrePrimario, fontSize: 12 },
+  colorEtiqueta: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  textoColorEtiqueta: { color: COLORES.textoBlanco, fontSize: 13, fontWeight: 'bold', marginLeft: 6 },
   feedbackEscaneo: {
     padding: 10, paddingHorizontal: 16,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

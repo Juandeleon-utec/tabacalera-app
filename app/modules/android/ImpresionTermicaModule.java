@@ -102,6 +102,7 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         String empresa    = transliterar(getString(d, "empresa"));
         String chofer     = transliterar(getString(d, "chofer"));
         String matricula  = getString(d, "matricula");
+        String colorEtiq  = transliterar(getString(d, "colorEtiqueta"));
         String fecha      = getString(d, "fecha");
         String hora       = getString(d, "hora");
         String operador   = transliterar(getString(d, "operador"));
@@ -122,6 +123,9 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         out.write(LEFT);
         escribeLinea(out, "Agricultor:", recortar(agricultor, 19));
         escribeLinea(out, "Codigo:    ", codigo);
+        if (!colorEtiq.isEmpty()) {
+            escribeLinea(out, "Etiqueta:  ", recortar(colorEtiq, 20));
+        }
         escribe(out, subSep());
         out.write(LF);
 

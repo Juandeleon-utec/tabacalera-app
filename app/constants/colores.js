@@ -34,6 +34,7 @@ info:                 '#2563EB',  // Azul — botón PDF, acciones informacional
 borde:                '#E6DFD2',  // Borde estándar — separadores de lista, tarjetas
 bordeInput:           '#D8CBB4',  // Borde campos de entrada de texto
 bordeValido:          '#A8D5B8',  // Borde secciones de resumen de envío válido
+bordeMuestraColor:    '#9E9E9E',  // Borde gris del cuadrado de color de etiqueta (hace visible el blanco)
 // ── Sombras ─────────────────────────────────────────────────────────────
 sombra:               '#000000',  // Color base para shadowColor en tarjetas
 };

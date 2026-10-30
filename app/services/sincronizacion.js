@@ -2,6 +2,7 @@ import {
   guardarUsuarios,
   guardarAgricultores,
   guardarTransportistas,
+  guardarColoresEtiqueta,
   reemplazarTransportistas,
   guardarInfoSync,
   listarEnviosNosincronizados,
@@ -46,6 +47,12 @@ export async function sincronizacionInicial(onProgreso) {
   onProgreso(`Guardando ${transportistas.length} transportistas...`);
   await guardarTransportistas(transportistas);
 
+  // Servidores anteriores a 1.3.0 no envían colores: no tocar la tabla local
+  if (Array.isArray(datos.colores_etiqueta)) {
+    onProgreso(`Guardando ${datos.colores_etiqueta.length} colores de etiqueta...`);
+    await guardarColoresEtiqueta(datos.colores_etiqueta);
+  }
+
   onProgreso('Guardando información de sincronización...');
   await guardarInfoSync(datos.token_sync);
 
@@ -54,6 +61,7 @@ export async function sincronizacionInicial(onProgreso) {
     usuarios: datos.usuarios.length,
     agricultores: datos.agricultores.length,
     transportistas: transportistas.length,
+    colores_etiqueta: datos.colores_etiqueta?.length || 0,
     sync_at: datos.sync_at,
   };
 }
@@ -95,6 +103,9 @@ export async function sincronizarEnviosPendientes() {
         transportista_id: envio.transportista_id || null,
         documento_chofer_real: envio.documento_chofer_real || null,
         observaciones: envio.observaciones || null,
+        color_etiqueta_id: envio.color_etiqueta_id || null,
+        color_etiqueta_nombre: envio.color_etiqueta_nombre || null,
+        color_etiqueta_hex: envio.color_etiqueta_hex || null,
         fecha: envio.fecha,
         hora: envio.hora,
         gps_lat: envio.gps_lat,

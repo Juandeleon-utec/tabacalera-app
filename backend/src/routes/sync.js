@@ -7,7 +7,8 @@ const bcrypt = require('bcryptjs');
 
 /**
  * GET /api/sync
- * Descarga usuarios activos y agricultores para sincronización inicial.
+ * Descarga usuarios activos, agricultores, transportistas y colores de etiqueta
+ * para sincronización inicial.
  * Solo accesible desde red interna.
  */
 router.get('/', soloRedInterna, async (req, res) => {
@@ -29,6 +30,7 @@ router.get('/', soloRedInterna, async (req, res) => {
     const coloresEtiqueta = await ColorEtiqueta.findAll({
       where: { activo: true },
       attributes: ['id', 'nombre', 'hex'],
+      order: [['nombre', 'ASC']],
     });
 
     // Generar un token JWT de sincronización para que la app pueda
