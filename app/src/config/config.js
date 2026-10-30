@@ -12,10 +12,10 @@ export const CONFIG = {
   SUPERADMIN_PASSWORD: 'Admin2026!',
 
   // ── Sesión ────────────────────────────────────────────────────────────────
-  DIAS_VENCIMIENTO_SESION: 14,
+  DIAS_VENCIMIENTO_SESION: 90,
 
   // ── Temporada actual (2 dígitos — valida los QR escaneados) ──────────────
-  TEMPORADA_ACTUAL: '26',
+  TEMPORADA_ACTUAL: '27',
 
   // ── Impresora térmica ESC/POS ─────────────────────────────────────────────
   // Puertos serie a probar en orden. Varía según el modelo del dispositivo.
