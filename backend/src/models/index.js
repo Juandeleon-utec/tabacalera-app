@@ -24,6 +24,7 @@ const Transportista = require('./Transportista')(sequelize);
 const ColorEtiqueta = require('./ColorEtiqueta')(sequelize);
 const Envio = require('./Envio')(sequelize);
 const Fardo = require('./Fardo')(sequelize);
+const Terminal = require('./Terminal')(sequelize);
 
 // Relaciones
 Usuario.hasMany(Envio, { foreignKey: 'usuario_id', as: 'envios' });
@@ -41,4 +42,4 @@ Envio.belongsTo(ColorEtiqueta, { foreignKey: 'color_etiqueta_id', as: 'color_eti
 Envio.hasMany(Fardo, { foreignKey: 'envio_id', as: 'fardos' });
 Fardo.belongsTo(Envio, { foreignKey: 'envio_id', as: 'envio' });
 
-module.exports = { sequelize, Usuario, Agricultor, Transportista, ColorEtiqueta, Envio, Fardo };
+module.exports = { sequelize, Usuario, Agricultor, Transportista, ColorEtiqueta, Envio, Fardo, Terminal };

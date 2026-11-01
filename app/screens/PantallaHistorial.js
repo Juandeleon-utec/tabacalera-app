@@ -15,6 +15,7 @@ import {
   buscarPDFGuardado,
 } from '../services/generadorPDF';
 import COLORES from '../constants/colores';
+import { formatearHoraLocal, duracionCarga } from '../utils/tiemposCarga';
 
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -286,9 +287,19 @@ export default function PantallaHistorial({ navigation, route }) {
 
             {/* Datos */}
             <View style={estilos.modalInfoBand}>
+              {envioSeleccionado?.nro_remito ? (
+                <Text style={estilos.modalInfoTexto}>
+                  Remito N° {envioSeleccionado.nro_remito}
+                </Text>
+              ) : null}
               <Text style={estilos.modalInfoTexto}>
                 Fecha: {envioSeleccionado?.fecha}
               </Text>
+              {envioSeleccionado?.hora_inicio_carga ? (
+                <Text style={estilos.modalInfoTexto}>
+                  Carga: {formatearHoraLocal(envioSeleccionado.hora_inicio_carga)}–{formatearHoraLocal(envioSeleccionado.hora_fin_carga)} ({duracionCarga(envioSeleccionado.hora_inicio_carga, envioSeleccionado.hora_fin_carga)})
+                </Text>
+              ) : null}
               {envioSeleccionado?.transportista_empresa ? (
                 <Text style={estilos.modalInfoTexto}>
                   Transporte: {envioSeleccionado.transportista_empresa}

@@ -1,5 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 import { CONFIG } from '../src/config/config';
+import { formatearHoraLocal, duracionCarga } from '../utils/tiemposCarga';
 
 const { ImpresionTermica } = NativeModules;
 
@@ -45,6 +46,10 @@ export async function imprimirComprobante(envio, fardos, sesion) {
     fecha: envio.fecha || '',
     hora: envio.hora || '',
     operador: sesion?.nombre || '',
+    nroRemito: envio.nro_remito || '',
+    inicioCarga: formatearHoraLocal(envio.hora_inicio_carga),
+    finCarga: formatearHoraLocal(envio.hora_fin_carga),
+    duracionCarga: duracionCarga(envio.hora_inicio_carga, envio.hora_fin_carga),
     fardosValidos: fardosValidosQr,
     totalValidos,
     totalInvalidos,

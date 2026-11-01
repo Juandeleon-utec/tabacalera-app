@@ -86,6 +86,9 @@ function cargarContenido(seccion) {
         case 'colores':
             cargarColores();
             break;
+        case 'terminales':
+            cargarTerminales();
+            break;
         default:
             contenidoPrincipal.innerHTML = '<h2>Bienvenido al panel de administración</h2>';
     }
@@ -620,6 +623,166 @@ async function desactivarColor(id) {
         }
     } catch (error) {
         console.error('Error desactivando color:', error);
+        alert('Error de conexión');
+    }
+}
+
+
+// Funciones para terminales
+// Se registran solas en su primera sincronización; aquí solo se edita alias y estado.
+let terminalesCargadas = [];
+
+function formatearFechaHora(valor) {
+    if (!valor) return '—';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('es-UY', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
+
+async function cargarTerminales() {
+    try {
+        const response = await fetch('/api/admin/terminales', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar terminales');
+        }
+
+        const data = await response.json();
+        terminalesCargadas = data.terminales;
+        mostrarTerminales(data);
+    } catch (error) {
+        console.error('Error cargando terminales:', error);
+        document.getElementById('contenido-principal').innerHTML =
+            '<div class="error-message">Error al cargar terminales</div>';
+    }
+}
+
+function mostrarTerminales(data) {
+    const contenido = document.getElementById('contenido-principal');
+    let html = `
+        <h2>Gestión de Terminales</h2>
+        <p>Las terminales se dan de alta automáticamente en su primera sincronización.
+           Una terminal inactiva no puede emitir remitos nuevos desde su próxima sincronización.</p>
+        <div class="form-container" id="contenedorFormTerminal" style="display:none">
+            <h3 id="tituloFormTerminal">Editar Terminal</h3>
+            <form id="formTerminal">
+                <input type="hidden" id="terminalId">
+                <div class="form-group">
+                    <label for="aliasTerminal">Alias:</label>
+                    <input type="text" id="aliasTerminal" maxlength="50" placeholder="Ej.: PDA comprador zona norte">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="activoTerminal"> Activa
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" onclick="guardarTerminal()" class="btn btn-primary">Guardar</button>
+                    <button type="button" onclick="cancelarEdicionTerminal()" class="btn-secondary">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Alias</th>
+                        <th>Alta</th>
+                        <th>Última sync</th>
+                        <th>Remitos</th>
+                        <th>Último remito</th>
+                        <th>Activa</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    if (data.terminales.length === 0) {
+        html += '<tr><td colspan="8">Todavía no hay terminales registradas</td></tr>';
+    }
+
+    data.terminales.forEach(t => {
+        html += `
+            <tr>
+                <td><b>TER${escaparHtml(t.codigo)}</b></td>
+                <td>${escaparHtml(t.alias || '—')}</td>
+                <td>${formatearFechaHora(t.created_at)}</td>
+                <td>${formatearFechaHora(t.ultima_sync_at)}</td>
+                <td>${t.total_remitos}</td>
+                <td>${t.ultimo_remito ? escaparHtml(t.ultimo_remito) + '<br><small>' + formatearFechaHora(t.ultimo_remito_at) + '</small>' : '—'}</td>
+                <td>${t.activo ? 'Sí' : 'No'}</td>
+                <td class="action-buttons">
+                    <button class="action-btn btn-edit" onclick="editarTerminal(${t.id})">Editar</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    contenido.innerHTML = html;
+}
+
+function editarTerminal(id) {
+    const t = terminalesCargadas.find(x => x.id === id);
+    if (!t) return;
+
+    document.getElementById('terminalId').value = t.id;
+    document.getElementById('aliasTerminal').value = t.alias || '';
+    document.getElementById('activoTerminal').checked = !!t.activo;
+    document.getElementById('tituloFormTerminal').textContent = `Editar Terminal TER${t.codigo}`;
+    const contenedor = document.getElementById('contenedorFormTerminal');
+    contenedor.style.display = '';
+    contenedor.scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelarEdicionTerminal() {
+    document.getElementById('terminalId').value = '';
+    document.getElementById('contenedorFormTerminal').style.display = 'none';
+}
+
+async function guardarTerminal() {
+    const id = document.getElementById('terminalId').value;
+    if (!id) return;
+    const alias = document.getElementById('aliasTerminal').value.trim();
+    const activo = document.getElementById('activoTerminal').checked;
+
+    const t = terminalesCargadas.find(x => String(x.id) === id);
+    if (t && t.activo && !activo &&
+        !confirm(`¿Dar de baja TER${t.codigo}? No podrá emitir remitos nuevos desde su próxima sincronización.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/terminales/${id}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alias, activo })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Terminal actualizada correctamente');
+            cargarTerminales();
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar la terminal'));
+        }
+    } catch (error) {
+        console.error('Error guardando terminal:', error);
         alert('Error de conexión');
     }
 }

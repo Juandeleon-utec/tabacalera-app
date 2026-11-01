@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../src/config/config';
-import { obtenerInfoSync } from './baseDeDatos';
+import { obtenerInfoSync, obtenerTerminal } from './baseDeDatos';
 
 // Confirmación en logcat que la URL correcta fue cargada al iniciar
 console.log('[API] URL base:', CONFIG.API_URL);
@@ -20,7 +20,11 @@ async function obtenerHeaderAuth() {
 export async function descargarDatosSync() {
   console.log('[API] descargarDatosSync →', CONFIG.API_URL + '/api/sync');
   try {
-    const respuesta = await clienteApi.get('/api/sync');
+    // id_instalacion permite al servidor registrar la terminal y devolver su código
+    const terminal = await obtenerTerminal();
+    const respuesta = await clienteApi.get('/api/sync', {
+      params: terminal?.id_instalacion ? { id_instalacion: terminal.id_instalacion } : {},
+    });
     console.log('[API] descargarDatosSync OK — status:', respuesta.status);
     return respuesta.data;
   } catch (error) {

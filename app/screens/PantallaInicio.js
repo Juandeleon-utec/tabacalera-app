@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { listarAgricultores, buscarAgricultores } from '../services/baseDeDatos';
+import { listarAgricultores, buscarAgricultores, listarEnviosNosincronizados } from '../services/baseDeDatos';
 import { sincronizarEnviosPendientes, hayConectividadConServidor, actualizarTransportistas } from '../services/sincronizacion';
 import { cerrarSesion } from '../services/autenticacion';
 import COLORES from '../constants/colores';
+
+const INTERVALO_SYNC_MS = 60000;
 
 export default function PantallaInicio({ navigation, route }) {
   const sesion = route.params?.sesion;
@@ -18,6 +21,8 @@ export default function PantallaInicio({ navigation, route }) {
   const [sincronizandoAuto, setSincronizandoAuto] = useState(false);
   const [hayConexion, setHayConexion] = useState(false);
   const [actualizandoTransp, setActualizandoTransp] = useState(false);
+  const [pendientes, setPendientes] = useState(0);
+  const syncEnCursoRef = useRef(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -37,8 +42,18 @@ export default function PantallaInicio({ navigation, route }) {
   useEffect(() => {
     cargarAgricultores();
     solicitarUbicacion();
-    ejecutarSyncAutomatica();
   }, []);
+
+  // Sync automática: al entrar o volver a esta pantalla y cada minuto mientras
+  // esté visible. Así, dejando la app en Inicio al llegar a planta, los envíos
+  // cerrados se suben solos en cuanto aparece la red interna.
+  useFocusEffect(
+    useCallback(() => {
+      ejecutarSyncAutomatica();
+      const intervalo = setInterval(ejecutarSyncAutomatica, INTERVALO_SYNC_MS);
+      return () => clearInterval(intervalo);
+    }, [])
+  );
 
   useEffect(() => {
     if (busqueda.trim().length >= 2) {
@@ -81,8 +96,20 @@ export default function PantallaInicio({ navigation, route }) {
     }
   }
 
-  async function ejecutarSyncAutomatica() {
+  async function actualizarPendientes() {
     try {
+      const lista = await listarEnviosNosincronizados();
+      setPendientes(lista.length);
+    } catch {
+      // No crítico: solo afecta el aviso
+    }
+  }
+
+  async function ejecutarSyncAutomatica() {
+    if (syncEnCursoRef.current) return;
+    syncEnCursoRef.current = true;
+    try {
+      await actualizarPendientes();
       const conectado = await hayConectividadConServidor();
       setHayConexion(conectado);
       if (conectado) {
@@ -96,6 +123,8 @@ export default function PantallaInicio({ navigation, route }) {
       console.warn('[SYNC AUTO]', error.message);
     } finally {
       setSincronizandoAuto(false);
+      await actualizarPendientes();
+      syncEnCursoRef.current = false;
     }
   }
 
@@ -208,6 +237,15 @@ export default function PantallaInicio({ navigation, route }) {
         )}
       </View>
 
+      {pendientes > 0 && (
+        <View style={estilos.avisoPendientes}>
+          <Text style={estilos.avisoPendientesTexto}>
+            ⏳ {pendientes} {pendientes === 1 ? 'envío pendiente' : 'envíos pendientes'} de sincronizar.
+            {'\n'}Al llegar a planta, deje la app abierta en esta pantalla con WiFi interno: se sincroniza sola.
+          </Text>
+        </View>
+      )}
+
       <Text style={estilos.instruccion}>
         Seleccione el agricultor para iniciar el escaneo de fardos
       </Text>
@@ -263,6 +301,11 @@ const estilos = StyleSheet.create({
   botonActualizarDeshabilitado: { backgroundColor: COLORES.secundario },
   botonActualizarTexto: { color: COLORES.textoBlanco, fontSize: 13, fontWeight: '600' },
   textoSinConexion: { fontSize: 11, color: COLORES.textoClaro, flex: 1 },
+  avisoPendientes: {
+    marginHorizontal: 12, marginTop: 8, padding: 10, borderRadius: 6,
+    backgroundColor: COLORES.fondoInfo, borderLeftWidth: 4, borderLeftColor: COLORES.duplicado,
+  },
+  avisoPendientesTexto: { fontSize: 12, color: COLORES.primario, lineHeight: 17 },
   instruccion: {
     fontSize: 13, color: COLORES.textoClaro, paddingHorizontal: 16,
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORES.borde,

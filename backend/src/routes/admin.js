@@ -6,6 +6,7 @@ const authRoutes = require('./admin/auth');
 const userRoutes = require('./admin/users');
 const transporterRoutes = require('./admin/transporters');
 const coloresEtiquetaRoutes = require('./admin/colores-etiqueta');
+const terminalesRoutes = require('./admin/terminales');
 
 // Login/logout
 // Debe ir ANTES del middleware de protección para permitir el login.
@@ -18,6 +19,7 @@ router.use('/api/admin', adminAuth);
 router.use('/api/admin', userRoutes);
 router.use('/api/admin', transporterRoutes);
 router.use('/api/admin', coloresEtiquetaRoutes);
+router.use('/api/admin', terminalesRoutes);
 
 // Dashboard
 router.get('/api/admin/dashboard', (req, res) => {

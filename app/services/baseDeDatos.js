@@ -1,4 +1,6 @@
 import * as SQLite from 'expo-sqlite';
+import { CONFIG } from '../src/config/config';
+import { generarIdLocal } from '../utils/uuid';
 
 let db;
 
@@ -95,6 +97,15 @@ export async function inicializarBaseDeDatos() {
     );
 
     INSERT OR IGNORE INTO sincronizacion (id) VALUES (1);
+
+    -- Identidad de esta instalación. codigo lo asigna el servidor (3 dígitos).
+    CREATE TABLE IF NOT EXISTS terminal (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      id_instalacion TEXT,
+      codigo TEXT
+    );
+
+    INSERT OR IGNORE INTO terminal (id) VALUES (1);
   `);
 
   // Migración: agregar columnas nuevas a instalaciones existentes
@@ -106,6 +117,11 @@ export async function inicializarBaseDeDatos() {
     'ALTER TABLE envios ADD COLUMN color_etiqueta_id INTEGER',
     'ALTER TABLE envios ADD COLUMN color_etiqueta_nombre TEXT',
     'ALTER TABLE envios ADD COLUMN color_etiqueta_hex TEXT',
+    // v1.4.0 — remito único por terminal + tiempos de carga (ISO 8601 UTC)
+    'ALTER TABLE envios ADD COLUMN nro_remito TEXT',
+    'ALTER TABLE envios ADD COLUMN terminal_codigo TEXT',
+    'ALTER TABLE envios ADD COLUMN hora_inicio_carga TEXT',
+    'ALTER TABLE envios ADD COLUMN hora_fin_carga TEXT',
   ];
   for (const sql of migraciones) {
     try {
@@ -114,6 +130,31 @@ export async function inicializarBaseDeDatos() {
       // La columna ya existe — ignorar
     }
   }
+
+  // Garantía local de no repetir remitos (SQLite admite múltiples NULL)
+  await baseDatos.runAsync(
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_envios_nro_remito ON envios(nro_remito)'
+  );
+
+  // El id de instalación se genera una sola vez y nunca cambia mientras la app
+  // esté instalada; el servidor lo usa para asignar el código de terminal.
+  const terminal = await baseDatos.getFirstAsync('SELECT id_instalacion FROM terminal WHERE id = 1');
+  if (!terminal?.id_instalacion) {
+    const idInstalacion = `${generarIdLocal()}-${generarIdLocal()}`;
+    await baseDatos.runAsync('UPDATE terminal SET id_instalacion = ? WHERE id = 1', [idInstalacion]);
+  }
+}
+
+// ─── Terminal ─────────────────────────────────────────────────────────────────
+
+export async function obtenerTerminal() {
+  const baseDatos = obtenerDB();
+  return await baseDatos.getFirstAsync('SELECT * FROM terminal WHERE id = 1');
+}
+
+export async function guardarCodigoTerminal(codigo) {
+  const baseDatos = obtenerDB();
+  await baseDatos.runAsync('UPDATE terminal SET codigo = ? WHERE id = 1', [codigo]);
 }
 
 // ─── Usuarios ────────────────────────────────────────────────────────────────
@@ -247,11 +288,47 @@ export async function crearEnvio(datos) {
   return resultado.lastInsertRowId;
 }
 
+export class TerminalNoRegistradaError extends Error {
+  constructor() {
+    super('Esta terminal no tiene código asignado o fue dada de baja. Conéctese a la red interna y sincronice con el servidor antes de cerrar el envío.');
+    this.name = 'TerminalNoRegistradaError';
+  }
+}
+
+/**
+ * Cierra el envío y le asigna el N° de remito: TER<ccc>RMT<zafra><nnnnn>.
+ * - inicio de carga = primer fardo escaneado; fin de carga = momento del cierre.
+ * - el correlativo es por terminal y por zafra (reinicia al cambiar TEMPORADA_ACTUAL).
+ * Idempotente: si ya estaba cerrado no reasigna número.
+ */
 export async function cerrarEnvio(envioId) {
   const baseDatos = obtenerDB();
-  await baseDatos.runAsync(
-    "UPDATE envios SET estado = 'cerrado' WHERE id = ?",
+  const envio = await baseDatos.getFirstAsync('SELECT estado FROM envios WHERE id = ?', [envioId]);
+  if (envio?.estado === 'cerrado') return;
+
+  const terminal = await obtenerTerminal();
+  if (!terminal?.codigo) throw new TerminalNoRegistradaError();
+
+  const prefijo = `TER${terminal.codigo}RMT${CONFIG.TEMPORADA_ACTUAL}`;
+  const ultimo = await baseDatos.getFirstAsync(
+    'SELECT MAX(CAST(substr(nro_remito, ?) AS INTEGER)) AS n FROM envios WHERE nro_remito LIKE ?',
+    [prefijo.length + 1, `${prefijo}%`]
+  );
+  const siguiente = (ultimo?.n || 0) + 1;
+  if (siguiente > 99999) throw new Error('Se agotó la numeración de remitos de esta zafra');
+  const nroRemito = prefijo + String(siguiente).padStart(5, '0');
+
+  const primerFardo = await baseDatos.getFirstAsync(
+    'SELECT MIN(timestamp_escaneo) AS t FROM fardos WHERE envio_id = ?',
     [envioId]
+  );
+  const finCarga = new Date().toISOString();
+
+  await baseDatos.runAsync(
+    `UPDATE envios SET estado = 'cerrado', nro_remito = ?, terminal_codigo = ?,
+       hora_inicio_carga = ?, hora_fin_carga = ?
+     WHERE id = ?`,
+    [nroRemito, terminal.codigo, primerFardo?.t || finCarga, finCarga, envioId]
   );
 }
 

@@ -8,6 +8,7 @@ import {
   listarEnviosNosincronizados,
   listarFardosPorEnvio,
   marcarEnvioSincronizado,
+  guardarCodigoTerminal,
 } from './baseDeDatos';
 import { descargarDatosSync, sincronizarEnvios, verificarConectividad } from './api';
 
@@ -53,6 +54,12 @@ export async function sincronizacionInicial(onProgreso) {
     await guardarColoresEtiqueta(datos.colores_etiqueta);
   }
 
+  // Servidores anteriores a 1.4.0 no devuelven terminal: se conserva el código actual
+  if (datos.terminal?.codigo) {
+    // Terminal dada de baja en el panel: sin código no puede emitir remitos
+    await guardarCodigoTerminal(datos.terminal.activo === false ? null : datos.terminal.codigo);
+  }
+
   onProgreso('Guardando información de sincronización...');
   await guardarInfoSync(datos.token_sync);
 
@@ -78,6 +85,9 @@ export async function actualizarTransportistas() {
   const datos = await descargarDatosSync();
   const transportistas = datos.transportistas || [];
   await reemplazarTransportistas(transportistas);
+  if (datos.terminal?.codigo) {
+    await guardarCodigoTerminal(datos.terminal.activo === false ? null : datos.terminal.codigo);
+  }
   return { cantidad: transportistas.length };
 }
 
@@ -110,6 +120,10 @@ export async function sincronizarEnviosPendientes() {
         hora: envio.hora,
         gps_lat: envio.gps_lat,
         gps_lng: envio.gps_lng,
+        nro_remito: envio.nro_remito || null,
+        terminal_codigo: envio.terminal_codigo || null,
+        hora_inicio_carga: envio.hora_inicio_carga || null,
+        hora_fin_carga: envio.hora_fin_carga || null,
         fardos: fardos.map((f) => ({
           codigo_qr: f.codigo_qr,
           valido: f.valido === 1,

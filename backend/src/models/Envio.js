@@ -67,6 +67,24 @@ module.exports = (sequelize) => {
       type: DataTypes.CHAR(7),
       allowNull: true,
     },
+    // v1.4.0 — remito único TER<ccc>RMT<zafra><nnnnn> y tiempos de carga
+    nro_remito: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      unique: 'envios_nro_remito_unique',
+    },
+    terminal_codigo: {
+      type: DataTypes.CHAR(3),
+      allowNull: true,
+    },
+    hora_inicio_carga: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    hora_fin_carga: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     sincronizado_at: {
       type: DataTypes.DATE,
       allowNull: true,

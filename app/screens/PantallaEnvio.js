@@ -3,7 +3,8 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Alert,
   ScrollView, ActivityIndicator, FlatList,
 } from 'react-native';
-import { listarFardosPorEnvio, obtenerEnvioPorId, cerrarEnvio } from '../services/baseDeDatos';
+import { listarFardosPorEnvio, obtenerEnvioPorId, cerrarEnvio, TerminalNoRegistradaError } from '../services/baseDeDatos';
+import { formatearHoraLocal, duracionCarga } from '../utils/tiemposCarga';
 import { generarPDFEnvio, compartirPDF, guardarPDFEnDispositivo } from '../services/generadorPDF';
 import { imprimirComprobante, verificarImpresoraDisponible } from '../services/impresora';
 import ItemFardo from '../components/ItemFardo';
@@ -56,10 +57,18 @@ export default function PantallaEnvio({ navigation, route }) {
   async function ejecutarCierre() {
     try {
       await cerrarEnvio(envioId);
+      // Recargar: el cierre asigna N° de remito y tiempos de carga
+      const actualizado = await obtenerEnvioPorId(envioId);
+      setEnvio(actualizado);
       setCerrado(true);
-      Alert.alert('Envío cerrado', 'El envío fue cerrado. Ahora puede generar el PDF.');
+      Alert.alert('Envío cerrado', `Remito N° ${actualizado?.nro_remito}\nAhora puede generar el PDF.`);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cerrar el envío');
+      if (error instanceof TerminalNoRegistradaError) {
+        Alert.alert('Terminal sin código', error.message);
+      } else {
+        Alert.alert('Error', 'No se pudo cerrar el envío');
+        console.error('[CIERRE]', error);
+      }
     }
   }
 
@@ -166,6 +175,15 @@ export default function PantallaEnvio({ navigation, route }) {
             <Text style={estilos.statLabel}>Total</Text>
           </View>
         </View>
+
+        {envio?.nro_remito ? (
+          <View style={estilos.filaFecha}>
+            <Text style={estilos.fecha}>Remito N° {envio.nro_remito}</Text>
+            <Text style={estilos.fecha}>
+              Carga {formatearHoraLocal(envio.hora_inicio_carga)}–{formatearHoraLocal(envio.hora_fin_carga)} ({duracionCarga(envio.hora_inicio_carga, envio.hora_fin_carga)})
+            </Text>
+          </View>
+        ) : null}
 
         {/* Estado */}
         <View style={[estilos.estadoBadge, cerrado ? estilos.estadoCerrado : estilos.estadoAbierto]}>

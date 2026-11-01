@@ -106,6 +106,10 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         String fecha      = getString(d, "fecha");
         String hora       = getString(d, "hora");
         String operador   = transliterar(getString(d, "operador"));
+        String nroRemito  = getString(d, "nroRemito");
+        String inicioCarga = getString(d, "inicioCarga");
+        String finCarga   = getString(d, "finCarga");
+        String duracion   = getString(d, "duracionCarga");
         int totalValidos  = getInt(d, "totalValidos");
         ReadableArray qrList = d.hasKey("fardosValidos") ? d.getArray("fardosValidos") : null;
 
@@ -115,6 +119,10 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         out.write(BOLD_ON);
         escribe(out, "MONTEPAZ - Rivera-Artigas");
         out.write(LF);
+        if (!nroRemito.isEmpty()) {
+            escribe(out, "REMITO " + nroRemito);
+            out.write(LF);
+        }
         out.write(BOLD_OFF);
         escribe(out, sep());
         out.write(LF);
@@ -146,6 +154,11 @@ public class ImpresionTermicaModule extends ReactContextBaseJavaModule {
         escribeLinea(out, "Fecha:     ", fecha);
         escribeLinea(out, "Hora:      ", hora);
         escribeLinea(out, "Operador:  ", recortar(operador, 20));
+        if (!inicioCarga.isEmpty()) {
+            escribeLinea(out, "Ini carga: ", inicioCarga);
+            escribeLinea(out, "Fin carga: ", finCarga);
+            escribeLinea(out, "Duracion:  ", duracion);
+        }
         escribe(out, sep());
         out.write(LF);
 

@@ -1,7 +1,9 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import Constants from 'expo-constants';
 import COLORES from '../constants/colores';
+import { formatearHoraLocal, duracionCarga } from '../utils/tiemposCarga';
 
 const NOMBRE_EMPRESA = 'C.I.T.M.P.S.A.';
 const SUBTITULO_EMPRESA = 'Tabacalera Montepaz S.A.';
@@ -72,6 +74,14 @@ function estadoFardo(fardo) {
 }
 
 function generarHtmlRemito(envio, fardos) {
+  // Envíos anteriores a 1.4.0 no tienen remito ni tiempos de carga
+  const bloqueRemito = envio.nro_remito ? `
+          <div class="nro-remito">N° ${escaparHtml(envio.nro_remito)}</div>` : '';
+  const bloqueCarga = envio.hora_inicio_carga ? `
+          <div><b>Inicio carga:</b> ${formatearHoraLocal(envio.hora_inicio_carga)}</div>
+          <div><b>Fin carga:</b> ${formatearHoraLocal(envio.hora_fin_carga)}</div>
+          <div><b>Duración:</b> ${duracionCarga(envio.hora_inicio_carga, envio.hora_fin_carga)}</div>` : '';
+
   const fardosValidos = fardos.filter((f) => estadoFardo(f) === 'valido');
   const totalValidos = fardosValidos.length;
 
@@ -130,6 +140,7 @@ function generarHtmlRemito(envio, fardos) {
         .membrete h1{margin:0;font-size:20px;letter-spacing:0.5px}
         .membrete .sub{margin:4px 0 0;font-size:12px;opacity:0.85}
         .membrete .fecha-doc{text-align:right;font-size:12px;line-height:1.7}
+        .membrete .nro-remito{font-size:15px;font-weight:bold;font-family:monospace;letter-spacing:0.5px;margin-bottom:2px}
         h2{color:${COLORES.primario};font-size:13px;border-bottom:2px solid ${COLORES.acento};padding-bottom:3px;margin:20px 0 10px}
         .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:16px}
         .dato{font-size:12px}.dato b{color:${COLORES.primario}}
@@ -152,9 +163,9 @@ function generarHtmlRemito(envio, fardos) {
           <p class="sub">${SUBTITULO_EMPRESA}</p>
           <p class="sub">Remito de compra de fardos</p>
         </div>
-        <div class="fecha-doc">
+        <div class="fecha-doc">${bloqueRemito}
           <div><b>Fecha:</b> ${fechaFormateada}</div>
-          <div><b>Hora:</b> ${escaparHtml(envio.hora)}</div>
+          <div><b>Hora:</b> ${escaparHtml(envio.hora)}</div>${bloqueCarga}
         </div>
       </div>
 
@@ -191,7 +202,7 @@ function generarHtmlRemito(envio, fardos) {
       </div>
 
       <div class="pie">
-        Generado por Tabacalera Montepaz v1.0 — ${NOMBRE_EMPRESA} ${new Date().getFullYear()}
+        Generado por Tabacalera Montepaz v${escaparHtml(Constants.expoConfig?.version || '')} — ${NOMBRE_EMPRESA} ${new Date().getFullYear()}
       </div>
     </body>
     </html>

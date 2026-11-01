@@ -37,6 +37,11 @@ router.post('/sync', verificarToken, async (req, res) => {
         hora,
         gps_lat,
         gps_lng,
+        // v1.4.0 — opcionales, APKs anteriores no los envían
+        nro_remito,
+        terminal_codigo,
+        hora_inicio_carga,
+        hora_fin_carga,
         fardos = [],
       } = envioData;
 
@@ -45,6 +50,17 @@ router.post('/sync', verificarToken, async (req, res) => {
       if (existente) {
         resultados.push({ id_local, estado: 'duplicado', id_servidor: existente.id });
         continue;
+      }
+
+      // Un remito repetido con otro id_local no debería ocurrir nunca: no se
+      // guarda (la app lo reintenta) y queda en el log para investigarlo.
+      if (nro_remito) {
+        const conflicto = await Envio.findOne({ where: { nro_remito }, transaction: transaccion });
+        if (conflicto) {
+          console.error(`[ENVIOS SYNC] Remito ${nro_remito} duplicado: id_local ${id_local} vs envío ${conflicto.id}`);
+          resultados.push({ id_local, estado: 'remito_duplicado', id_servidor: null });
+          continue;
+        }
       }
 
       const envio = await Envio.create(
@@ -62,6 +78,10 @@ router.post('/sync', verificarToken, async (req, res) => {
           hora,
           gps_lat: gps_lat || null,
           gps_lng: gps_lng || null,
+          nro_remito: nro_remito || null,
+          terminal_codigo: terminal_codigo || null,
+          hora_inicio_carga: hora_inicio_carga || null,
+          hora_fin_carga: hora_fin_carga || null,
           total_fardos: fardos.length,
           sincronizado_at: new Date(),
         },

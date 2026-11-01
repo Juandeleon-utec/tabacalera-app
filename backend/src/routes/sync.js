@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { soloRedInterna } = require('../middleware/ipWhitelist');
 const { generarToken } = require('../middleware/auth');
-const { Usuario, Agricultor, Transportista, ColorEtiqueta } = require('../models');
+const { Usuario, Agricultor, Transportista, ColorEtiqueta, Terminal } = require('../models');
 const bcrypt = require('bcryptjs');
 
 /**
@@ -11,8 +11,29 @@ const bcrypt = require('bcryptjs');
  * para sincronización inicial.
  * Solo accesible desde red interna.
  */
+/**
+ * Registra (o reconoce) la terminal por su id de instalación y devuelve su
+ * código de 3 dígitos. El código se deriva del id autoincremental.
+ */
+async function registrarTerminal(idInstalacion) {
+  if (!idInstalacion || typeof idInstalacion !== 'string' || idInstalacion.length > 64) {
+    return null;
+  }
+  const [terminal] = await Terminal.findOrCreate({ where: { id_instalacion: idInstalacion } });
+  if (!terminal.codigo) {
+    if (terminal.id > 999) throw new Error('Se agotaron los códigos de terminal (máx. 999)');
+    terminal.codigo = String(terminal.id).padStart(3, '0');
+  }
+  terminal.ultima_sync_at = new Date();
+  await terminal.save();
+  return { codigo: terminal.codigo, activo: terminal.activo };
+}
+
 router.get('/', soloRedInterna, async (req, res) => {
   try {
+    // APKs anteriores a 1.4.0 no envían id_instalacion: terminal = null
+    const terminal = await registrarTerminal(req.query.id_instalacion);
+
     const usuarios = await Usuario.findAll({
       attributes: ['id', 'nombre', 'usuario', 'password_hash', 'activo', 'rol'],
     });
@@ -45,6 +66,7 @@ router.get('/', soloRedInterna, async (req, res) => {
       agricultores: agricultores.map((a) => a.toJSON()),
       transportistas: transportistas.map((t) => t.toJSON()),
       colores_etiqueta: coloresEtiqueta.map((c) => c.toJSON()),
+      terminal,
     });
   } catch (error) {
     console.error('[SYNC GET]', error);
