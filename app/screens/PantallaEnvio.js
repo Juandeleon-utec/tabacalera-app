@@ -20,11 +20,54 @@ export default function PantallaEnvio({ navigation, route }) {
   const [imprimiendoTicket, setImprimiendoTicket] = useState(false);
   const [impresoraDisponible, setImpresoraDisponible] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const [pdfGenerado, setPdfGenerado] = useState(false);
 
   useEffect(() => {
     cargarDatos();
     verificarImpresoraDisponible().then(setImpresoraDisponible);
   }, []);
+
+  // Una vez cerrado, el envío no se puede retomar: volver atrás (flecha del
+  // header, botón físico o gesto) no regresa al escáner ni al transporte,
+  // sino a "Seleccionar Agricultor". Si todavía no se generó el PDF, se avisa
+  // antes de salir para que el comprobante no quede sin enviar.
+  useEffect(() => {
+    if (!cerrado) return undefined;
+    const quitar = navigation.addListener('beforeRemove', (e) => {
+      const tipo = e.data.action.type;
+      if (tipo !== 'GO_BACK' && tipo !== 'POP') return; // el propio reset pasa
+      e.preventDefault();
+      salirDelEnvio();
+    });
+    return quitar;
+  }, [navigation, cerrado, pdfGenerado]);
+
+  function volverAInicio() {
+    // Se conserva la pila hasta "Inicio" (con su estado y, si entró un admin,
+    // la pantalla de abajo); se descartan Transporte, Escáner y este envío.
+    const estado = navigation.getState();
+    const indice = estado.routes.findIndex((r) => r.name === 'Inicio');
+    if (indice >= 0) {
+      navigation.reset({ ...estado, index: indice, routes: estado.routes.slice(0, indice + 1) });
+    } else {
+      navigation.reset({ index: 0, routes: [{ name: 'Inicio', params: { sesion } }] });
+    }
+  }
+
+  function salirDelEnvio() {
+    if (pdfGenerado) {
+      volverAInicio();
+      return;
+    }
+    Alert.alert(
+      'PDF sin generar',
+      'Todavía no generó el PDF de este envío. Podrá hacerlo después desde el Historial.\n¿Salir igual?',
+      [
+        { text: 'Quedarme', style: 'cancel' },
+        { text: 'Salir', style: 'destructive', onPress: volverAInicio },
+      ]
+    );
+  }
 
   async function cargarDatos() {
     try {
@@ -87,6 +130,7 @@ export default function PantallaEnvio({ navigation, route }) {
       const uriTemporal = await generarPDFEnvio(datosEnvio, fardos);
       const { ruta, nombreArchivo, guardadoEnDescargasPublicas } =
         await guardarPDFEnDispositivo(uriTemporal, datosEnvio);
+      setPdfGenerado(true);
 
       const ubicacion = guardadoEnDescargasPublicas
         ? 'Downloads/Montepaz/'
@@ -134,7 +178,7 @@ export default function PantallaEnvio({ navigation, route }) {
   }
 
   function manejarNuevoEnvio() {
-    navigation.navigate('Inicio', { sesion });
+    salirDelEnvio();
   }
 
   if (cargando) {
