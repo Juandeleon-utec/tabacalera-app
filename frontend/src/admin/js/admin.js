@@ -89,6 +89,9 @@ function cargarContenido(seccion) {
         case 'terminales':
             cargarTerminales();
             break;
+        case 'recepciones':
+            cargarRecepciones();
+            break;
         default:
             contenidoPrincipal.innerHTML = '<h2>Bienvenido al panel de administración</h2>';
     }
@@ -784,5 +787,263 @@ async function guardarTerminal() {
     } catch (error) {
         console.error('Error guardando terminal:', error);
         alert('Error de conexión');
+    }
+}
+
+// Funciones para recepciones (histórico de envíos sincronizados)
+// Solo lectura. "Reimprimir" abre el remito en otra pestaña para imprimir
+// o guardar como PDF y reenviarlo al agricultor.
+const POR_PAGINA_RECEPCIONES = 50;
+let filtrosRecepciones = {};
+let paginaRecepciones = 1;
+
+function fechaIso(d) {
+    const z = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+}
+
+function formatearFechaCorta(valor) {
+    return valor ? String(valor).split('-').reverse().join('/') : '—';
+}
+
+function formatearHoraCorta(valor) {
+    if (!valor) return '';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+async function cargarRecepciones() {
+    const contenido = document.getElementById('contenido-principal');
+    const hoy = new Date();
+    const hace30 = new Date(hoy.getTime() - 30 * 24 * 3600 * 1000);
+
+    contenido.innerHTML = `
+        <h2>Recepciones</h2>
+        <p>Envíos sincronizados desde las terminales. Con <b>Reimprimir</b> se abre el remito
+           para imprimirlo o guardarlo como PDF y reenviarlo al agricultor.</p>
+        <div class="form-container">
+            <form id="formFiltrosRecepciones" class="filtros-grid" onsubmit="buscarRecepciones(event)">
+                <div class="form-group">
+                    <label for="filtroDesde">Desde</label>
+                    <input type="date" id="filtroDesde" value="${fechaIso(hace30)}">
+                </div>
+                <div class="form-group">
+                    <label for="filtroHasta">Hasta</label>
+                    <input type="date" id="filtroHasta" value="${fechaIso(hoy)}">
+                </div>
+                <div class="form-group">
+                    <label for="filtroAgricultor">Agricultor (código o nombre)</label>
+                    <input type="text" id="filtroAgricultor" maxlength="60">
+                </div>
+                <div class="form-group">
+                    <label for="filtroRemito">N° de remito</label>
+                    <input type="text" id="filtroRemito" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="filtroUsuario">Comprador</label>
+                    <select id="filtroUsuario"><option value="">Todos</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="filtroTerminal">Terminal</label>
+                    <select id="filtroTerminal"><option value="">Todas</option></select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    <button type="button" class="btn-secondary" onclick="limpiarFiltrosRecepciones()">Limpiar</button>
+                </div>
+            </form>
+        </div>
+        <div id="detalleRecepcion"></div>
+        <div id="resultadoRecepciones"></div>
+    `;
+
+    try {
+        const response = await fetch('/api/admin/recepciones/opciones', { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('filtroUsuario').innerHTML += data.usuarios
+                .map(u => `<option value="${u.id}">${escaparHtml(u.nombre)} (${escaparHtml(u.usuario)})</option>`).join('');
+            document.getElementById('filtroTerminal').innerHTML += data.terminales
+                .map(t => `<option value="${escaparHtml(t.codigo)}">TER${escaparHtml(t.codigo)}${t.alias ? ' — ' + escaparHtml(t.alias) : ''}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando opciones de filtros:', error);
+    }
+
+    buscarRecepciones();
+}
+
+function limpiarFiltrosRecepciones() {
+    ['filtroDesde', 'filtroHasta', 'filtroAgricultor', 'filtroRemito', 'filtroUsuario', 'filtroTerminal']
+        .forEach(id => { document.getElementById(id).value = ''; });
+    buscarRecepciones();
+}
+
+function buscarRecepciones(e) {
+    if (e) e.preventDefault();
+    filtrosRecepciones = {
+        desde: document.getElementById('filtroDesde').value,
+        hasta: document.getElementById('filtroHasta').value,
+        agricultor: document.getElementById('filtroAgricultor').value.trim(),
+        remito: document.getElementById('filtroRemito').value.trim(),
+        usuario_id: document.getElementById('filtroUsuario').value,
+        terminal: document.getElementById('filtroTerminal').value,
+    };
+    irAPaginaRecepciones(1);
+}
+
+async function irAPaginaRecepciones(pagina) {
+    paginaRecepciones = pagina;
+    const params = new URLSearchParams({ pagina, por_pagina: POR_PAGINA_RECEPCIONES });
+    Object.entries(filtrosRecepciones).forEach(([k, v]) => { if (v) params.set(k, v); });
+
+    const destino = document.getElementById('resultadoRecepciones');
+    destino.innerHTML = '<p>Cargando…</p>';
+    try {
+        const response = await fetch(`/api/admin/recepciones?${params}`, { credentials: 'include' });
+        if (response.status === 401) {
+            window.location.href = '/admin/login';
+            return;
+        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar recepciones');
+        mostrarRecepciones(data);
+    } catch (error) {
+        console.error('Error cargando recepciones:', error);
+        destino.innerHTML = `<div class="error-message">${escaparHtml(error.message)}</div>`;
+    }
+}
+
+function mostrarRecepciones(data) {
+    const totalPaginas = Math.max(Math.ceil(data.total / data.por_pagina), 1);
+    const totalFardosPagina = data.recepciones.reduce((s, r) => s + r.fardos_validos, 0);
+
+    let html = `
+        <div class="resumen-recepciones">
+            ${data.total} recepción(es) — ${totalFardosPagina} fardos válidos en esta página
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>N° remito</th>
+                        <th>Agricultor</th>
+                        <th>Comprador</th>
+                        <th>Transporte</th>
+                        <th>Carga</th>
+                        <th>Fardos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    if (data.recepciones.length === 0) {
+        html += '<tr><td colspan="8">No hay recepciones con esos filtros</td></tr>';
+    }
+
+    data.recepciones.forEach(r => {
+        const a = r.agricultor || {};
+        const t = r.transportista;
+        const carga = r.hora_inicio_carga
+            ? `${formatearHoraCorta(r.hora_inicio_carga)} – ${formatearHoraCorta(r.hora_fin_carga)}`
+            : '—';
+        const invalidos = r.total_fardos - r.fardos_validos;
+        html += `
+            <tr>
+                <td>${formatearFechaCorta(r.fecha)}<br><small>${escaparHtml(String(r.hora || '').substring(0, 5))}</small></td>
+                <td>${r.nro_remito ? '<b>' + escaparHtml(r.nro_remito) + '</b>' : '<small>sin remito</small>'}</td>
+                <td>${escaparHtml(a.nombre || '—')}<br><small>${escaparHtml(a.codigo_6dig || '')}</small></td>
+                <td>${escaparHtml(r.usuario?.nombre || '—')}</td>
+                <td>${t ? escaparHtml(t.empresa) + '<br><small>' + escaparHtml(t.matricula) + '</small>' : '—'}</td>
+                <td>${carga}</td>
+                <td><b>${r.fardos_validos}</b>${invalidos > 0 ? `<br><small>+${invalidos} rechazados</small>` : ''}</td>
+                <td class="action-buttons">
+                    <button class="action-btn btn-edit" onclick="verRecepcion(${r.id})">Ver</button>
+                    <button class="action-btn btn-reimprimir" onclick="reimprimirRemito(${r.id})">Reimprimir</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="paginacion">
+            <button class="btn-secondary" ${data.pagina <= 1 ? 'disabled' : ''}
+                onclick="irAPaginaRecepciones(${data.pagina - 1})">‹ Anterior</button>
+            <span>Página ${data.pagina} de ${totalPaginas}</span>
+            <button class="btn-secondary" ${data.pagina >= totalPaginas ? 'disabled' : ''}
+                onclick="irAPaginaRecepciones(${data.pagina + 1})">Siguiente ›</button>
+        </div>
+    `;
+
+    document.getElementById('resultadoRecepciones').innerHTML = html;
+}
+
+function reimprimirRemito(id) {
+    window.open(`/api/admin/recepciones/${id}/remito`, '_blank');
+}
+
+function estadoFardoTexto(f) {
+    if (f.valido) return '<span class="estado-valido">Válido</span>';
+    const motivo = escaparHtml(f.motivo_invalido || 'Inválido');
+    return /duplicado/i.test(f.motivo_invalido || '')
+        ? `<span class="estado-duplicado">${motivo}</span>`
+        : `<span class="estado-invalido">${motivo}</span>`;
+}
+
+async function verRecepcion(id) {
+    const destino = document.getElementById('detalleRecepcion');
+    destino.innerHTML = '<p>Cargando…</p>';
+    try {
+        const response = await fetch(`/api/admin/recepciones/${id}`, { credentials: 'include' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Error al cargar la recepción');
+        const r = data.recepcion;
+        const a = r.agricultor || {};
+        const t = r.transportista;
+
+        const filas = (r.fardos || []).map((f, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td class="mono">${escaparHtml(f.codigo_qr)}</td>
+                <td>${estadoFardoTexto(f)}</td>
+                <td>${formatearFechaHora(f.timestamp_escaneo)}</td>
+            </tr>`).join('');
+
+        destino.innerHTML = `
+            <div class="form-container detalle-recepcion">
+                <h3>${r.nro_remito ? 'Remito ' + escaparHtml(r.nro_remito) : 'Recepción #' + r.id}</h3>
+                <div class="detalle-grid">
+                    <div><b>Fecha:</b> ${formatearFechaCorta(r.fecha)} ${escaparHtml(String(r.hora || '').substring(0, 5))}</div>
+                    <div><b>Agricultor:</b> ${escaparHtml(a.nombre || '—')} (${escaparHtml(a.codigo_6dig || '')})</div>
+                    <div><b>Comprador:</b> ${escaparHtml(r.usuario?.nombre || '—')}</div>
+                    <div><b>Terminal:</b> ${r.terminal_codigo ? 'TER' + escaparHtml(r.terminal_codigo) : '—'}</div>
+                    <div><b>Transporte:</b> ${t ? escaparHtml(t.empresa) + ' — ' + escaparHtml(t.nombre_chofer) + ' — ' + escaparHtml(t.matricula) : '—'}</div>
+                    <div><b>Color etiqueta:</b> ${r.color_etiqueta_hex ? `<span class="swatch-color" style="background:${escaparHtml(r.color_etiqueta_hex)}"></span> ` : ''}${escaparHtml(r.color_etiqueta_nombre || '—')}</div>
+                    <div><b>Carga:</b> ${r.hora_inicio_carga ? formatearHoraCorta(r.hora_inicio_carga) + ' – ' + formatearHoraCorta(r.hora_fin_carga) : '—'}</div>
+                    <div><b>Sincronizado:</b> ${formatearFechaHora(r.sincronizado_at)}</div>
+                    ${r.observaciones ? `<div class="span-2"><b>Observaciones:</b> ${escaparHtml(r.observaciones)}</div>` : ''}
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>#</th><th>Código QR</th><th>Estado</th><th>Escaneado</th></tr></thead>
+                        <tbody>${filas || '<tr><td colspan="4">Sin fardos</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="reimprimirRemito(${r.id})">Reimprimir remito</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('detalleRecepcion').innerHTML=''">Cerrar</button>
+                </div>
+            </div>
+        `;
+        destino.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error('Error cargando recepción:', error);
+        destino.innerHTML = `<div class="error-message">${escaparHtml(error.message)}</div>`;
     }
 }
