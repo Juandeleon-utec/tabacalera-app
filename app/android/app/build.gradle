@@ -114,8 +114,8 @@ android {
         applicationId 'com.montepaz.tabacalera'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "1.4.0"
+        versionCode 9
+        versionName "1.4.1"
     }
     signingConfigs {
         debug {

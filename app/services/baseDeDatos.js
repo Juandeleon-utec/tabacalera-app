@@ -180,15 +180,9 @@ export async function buscarUsuarioPorNombre(nombreUsuario) {
 
 // ─── Transportistas ───────────────────────────────────────────────────────────
 
+// Sincronización inicial: misma lógica que "Actualizar transportistas".
 export async function guardarTransportistas(transportistas) {
-  const baseDatos = obtenerDB();
-  for (const t of transportistas) {
-    await baseDatos.runAsync(
-      `INSERT OR REPLACE INTO transportistas (id, empresa, nombre_chofer, documento, matricula, activo)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [t.id, t.empresa, t.nombre_chofer, t.documento || null, t.matricula, 1]
-    );
-  }
+  await reemplazarTransportistas(transportistas);
 }
 
 export async function listarTransportistas() {
@@ -438,14 +432,28 @@ export async function listarTodosEnviosResumenPorUsuario(usuarioId) {
   );
 }
 
+// El servidor solo envía los transportistas activos. No se puede borrar la
+// tabla y recargarla: los envíos guardados (aun los ya sincronizados, que
+// quedan para el historial) la referencian por FK y SQLite rechaza el DELETE.
+// Se desactivan todos y se reactivan/actualizan los recibidos (upsert), igual
+// que con los colores de etiqueta. Uno dado de baja en el panel deja de
+// aparecer en el selector pero sigue disponible para el historial y el PDF.
 export async function reemplazarTransportistas(transportistas) {
   const baseDatos = obtenerDB();
-  await baseDatos.runAsync('DELETE FROM transportistas');
-  for (const t of transportistas) {
-    await baseDatos.runAsync(
-      `INSERT INTO transportistas (id, empresa, nombre_chofer, documento, matricula, activo)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [t.id, t.empresa, t.nombre_chofer, t.documento || null, t.matricula, 1]
-    );
-  }
+  await baseDatos.withTransactionAsync(async () => {
+    await baseDatos.runAsync('UPDATE transportistas SET activo = 0');
+    for (const t of transportistas) {
+      await baseDatos.runAsync(
+        `INSERT INTO transportistas (id, empresa, nombre_chofer, documento, matricula, activo)
+         VALUES (?, ?, ?, ?, ?, 1)
+         ON CONFLICT(id) DO UPDATE SET
+           empresa = excluded.empresa,
+           nombre_chofer = excluded.nombre_chofer,
+           documento = excluded.documento,
+           matricula = excluded.matricula,
+           activo = 1`,
+        [t.id, t.empresa, t.nombre_chofer, t.documento || null, t.matricula]
+      );
+    }
+  });
 }
